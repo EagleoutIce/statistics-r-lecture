@@ -1,0 +1,15 @@
+[submodule "slide-template-uulm"]
+	path = slide-template-uulm
+	url = git@github.com:sp-uulm/FancyBeamerUULM.git
+[submodule "xlistings"]
+	path = xlistings
+	url = https://github.com/EagleoutIce/xlistings
+[submodule "code-animation"]
+	path = code-animation
+	url = https://github.com/EagleoutIce/code-animation.git
+[submodule "magic-r"]
+	path = magic-r
+	url = https://github.com/EagleoutIce/magic-r.git
+[submodule "fancyqr"]
+	path = fancyqr
+	url = https://github.com/EagleoutIce/fancyqr

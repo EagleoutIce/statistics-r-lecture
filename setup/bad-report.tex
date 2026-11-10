@@ -1,0 +1,42 @@
+% The results paragraph of the talk group with planted flaws, and their fixes: shared by the slides and by
+% report-flaws.tex, the clickable version to present
+% \BadReport: a results paragraph with planted flaws. \Flaw{n}{text} marks a flaw, \Good{text} something done right;
+% both are plain text in the task and marked in the answer
+\colorlet{GoodGreen}{green!40!black}
+\newcommand\Flaw[2]{#2}
+\newcommand\Good[1]{#1}
+% how bad each flaw is: the color of its badge
+\colorlet{SevCritical}{Warn}\colorlet{SevProblematic}{orange!85!black}\colorlet{SevFine}{gray}
+\csdef{flawsev@1}{Problematic}\csdef{flawsev@2}{Problematic}\csdef{flawsev@3}{Problematic}\csdef{flawsev@4}{Critical}
+\csdef{flawsev@5}{Critical}\csdef{flawsev@6}{Critical}\csdef{flawsev@7}{Fine}\csdef{flawsev@8}{Critical}
+\newcommand\FlawBadge[1]{\tikz[baseline=(b.base)]\node[circle,fill=Sev\csuse{flawsev@#1},text=white,font=\tiny\sbseries,inner sep=.4pt,minimum size=2.5mm](b){#1};}
+\newcommand\FlawShown[2]{\textcolor{Sev\csuse{flawsev@#1}}{\sbseries #2}\,\FlawBadge{#1}}
+\newcommand\BadReport{%
+   \textsb{Results.} We asked \Flaw1{12 friends from our lab} to solve \Good{the same five tasks with our tool and with the state of the art (CatPurr)}.
+   With our tool they were \Flaw2{\qty{38}{\percent} faster} (\Flaw3{\(t\)-test, \(p = 0.04\)}).
+   \Flaw4{We removed two participants whose times looked unusual.}
+   \Good{We also measured errors, satisfaction, and learnability}, \Flaw5{but only speed was significant}.
+   Satisfaction did not differ, \Flaw6{so both tools are equally pleasant}.
+   The effect is strongest for experts (\Flaw7{\(p = 0.03\) for more than five years of experience}).
+   \Flaw8{Our tool therefore makes developers more productive.}}
+% \FixItem{n}{problem}{fix}: one flaw of the report, with its fix, on one line;
+% the problem carries its own punctuation
+\newcommand\FixItem[3]{\FlawBadge{#1}~\textsb{#2} \textcolor{darkgray}{#3}\par\vspace{.7mm}}
+\newcommand\FixLevel[2]{\textcolor{Sev#1}{\sbseries\small #2}\par\vspace{.6mm}}
+% \ReportFixes: the fixes, sorted by how bad the flaw is; \FixGroup{overlay}{items} shows a group of them,
+% \FixThreats{text} the closing remark
+\newcommand\FixGroup[2]{\onslide<#1->{#2}}
+\newcommand\FixThreats[1]{\onslide<5->{#1}}
+\newcommand\ReportFixes{%
+      \FixGroup2{\FixLevel{Critical}{Critical}
+      \FixItem4{Exclusion after a look:}{fix the rule first}
+      \FixItem5{One of four outcomes:}{report all, correct with Holm}
+      \FixItem6{No difference is not equality:}{show the confidence interval}
+      \FixItem8{Productivity:}{say what you measured (speed)}}
+      \FixGroup3{\vspace{1mm}\FixLevel{Problematic}{Problematic (hides)}
+      \FixItem3{Which test?}{paired \(t\)-test with \(t\), df, exact \(p\)}
+      \FixItem2{Relative only:}{seconds and a \qty{95}{\percent} confidence interval}
+      \FixItem1{Friends:}{recruit outside the lab, say how}}
+      \FixGroup4{\vspace{1mm}\FixLevel{Fine}{Could be fine}
+      \FixItem7{Expert subgroup:}{exploratory, test it on new data}}
+      \FixThreats{\vspace{1.5mm}\textcolor{gray}{Perfect reporting is not always possible: name the \textsb{threats to validity}.}}}

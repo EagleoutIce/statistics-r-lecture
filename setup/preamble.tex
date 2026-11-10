@@ -1,0 +1,210 @@
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[sfdefault]{FiraSans}
+\usepackage{newtxsf}% sans serif math, to match the text
+\usepackage{FiraMono}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{fontawesome}
+\usepackage{csquotes}
+\usepackage{morewrites}
+\usepackage{upquote}
+\usepackage{multicol}
+\usepackage{booktabs,array,tabularx}
+\usepackage{siunitx}
+% all numbers with units go through \qty, \num, and \unit. They follow the surrounding font (bold, italic, text or math),
+% thin spaces group digits from 1000 on and separate a number from its unit, an explicit plus sign stays
+\sisetup{
+   mode=match,
+   propagate-math-font=true,
+   reset-math-version=false,
+   reset-text-family=false,
+   reset-text-series=false,
+   reset-text-shape=false,
+   text-family-to-math=true,
+   text-series-to-math=true,
+   group-separator={\,},
+   group-minimum-digits=4,
+   output-decimal-marker={.},
+   retain-explicit-plus=true,
+   quantity-product={\,},
+   per-mode=symbol,
+   range-units=single,
+   range-phrase={ to },
+}
+\DeclareSIUnit\euro{\text{\texteuro}}
+\usepackage{fancyqr/fancyqr}
+\usetikzlibrary{arrows.meta,decorations.pathmorphing,decorations.pathreplacing,fit,backgrounds,matrix,shadows,positioning,calc,shapes.geometric,shapes.misc,fadings,trees,shapes.callouts}
+\usepgfplotslibrary{fillbetween,groupplots}
+\pgfdeclarelayer{foreground}
+\usepackage[glows]{tikzpingus}
+\pgfsetlayers{very-background,background,main,middle,foreground}
+\def\sbseries{\fontseries{sb}\selectfont}
+\def\textsb#1{{\sbseries#1}}
+
+\usepackage{slide-template-uulm/fancybeamer}
+\usepackage{slide-template-uulm/fancyuulm}
+\setpaths{{slide-template-uulm/}{slide-template-uulm/logos/}{slide-template-uulm/empty-slides/}{xlistings/}{magic-r/}{figures/out/}}
+
+\usepackage[auto]{contour}
+\PassOptionsToPackage{normalem}{ulem}
+\usepackage{ulem}
+\makeatletter
+\DeclareRobustCommand*\fancyul[2][\fancyulbackground]{%
+   \def\fancyul@background{#1}%
+   \def\ULdepth{1pt}%
+   \def\ULthickness{.1ex}%
+   \contourlength{.35pt}%
+   {\color{\fancyulcolor}\uline{\phantom{#2}}}\llap{\contour\fancyul@background{#2}}%
+}
+\def\fancyulbackground{white}
+\colorlet{ul@line@color}{blue!35}
+\def\fancyulcolor{ul@line@color}
+\def\update@ul{\setbox\z@\hbox{{(j}}\let\ULdepth\p@\edef\ULthickness{\the\dimexpr.235\dp\z@}}
+\DeclareRobustCommand*\link{\hyper@normalise\link@do}
+\def\link@do#1#2{\leavevmode\hskip-2\p@\href{#1}{\update@ul\hskip2\p@\fancyul{#2}}}
+\makeatother
+\hypersetup{colorlinks=false,pdfborder=0 0 0}
+\usepackage[tikz]{ocgx2}
+\urlstyle{same}
+
+\usepackage{code-animation/code-animation}
+\usepackage[fakeminted,print]{xlistings/xlistings}
+\xlstsetmintedstyle{plain}
+\LoadLanguages{yaml}
+\usepackage[language=R,eval,graphs,playground,underline=false]{magic-r/magic-r}
+% magic-r's play arrow, left of the language badge, both above the first line and out of the way of the code
+\makeatletter\def\xlstlangbadgestyle#1{\raisebox{1.3em}{\normalfont\color{xlst@colors@lst@linenumbers}\textsf{\footnotesize#1}}}\makeatother
+\mrPlayStyle{filled}
+\def\mrPlayOffset{-2.6mm}
+\renewcommand\mrPlaceButton[1]{\rlap{\hspace*{\linewidth}\hspace{\mrPlayOffset}\llap{\smash{\raisebox{1.3em}{#1}}}}}
+\mode<handout>{\mrSessionSetup{animate=false}}
+% a session has no badge and often text right above it: magic-r's button and an 'R' at the right of its
+% first line, linked to the session's inputs in flowR's playground (\mrSessionPlayUrl, empty without one)
+% a small gap before each input of a session: the prompt makes its line taller, and the fixed depth of every line keeps the gaps equal
+\let\LecturePlainPrompt\mrPrompt
+\renewcommand\mrPrompt[1]{\ifstrequal{#1}{>}{\rule{0pt}{\dimexpr.7\baselineskip+1pt\relax}}{}\LecturePlainPrompt{#1}}
+\makeatletter
+\lst@AddToHook{EveryPar}{\rule[-.3\baselineskip]{0pt}{0pt}}
+\lst@AddToHook{EveryPar}{\ifx\mrSessionPlayUrl\@empty\else
+   % an hbox within \smash: the link takes its height from the enclosing box, which \smash would make zero
+   \rlap{\hspace*{\linewidth}\llap{\smash{\hbox{\expandafter\href\expandafter{\mrSessionPlayUrl}{\mrPlayButton\hspace{1mm}%
+      \normalfont\color{xlst@colors@lst@linenumbers}\textsf{\footnotesize R}}}}}}%
+   \global\let\mrSessionPlayUrl\@empty\fi}
+\makeatother
+% keywords dark red, packages sand, functions plum, numbers orange, strings green: each kind tells apart at a glance
+\definecolor{codeKeyword}{HTML}{7A2430}
+\definecolor{codeFunction}{HTML}{5E3A68}
+\definecolor{codePackage}{HTML}{8A6A2E}
+\definecolor{codeNumber}{HTML}{A85A12}
+\definecolor{codeString}{HTML}{2E7D32}
+\lstcolorlet{keywordA}{codeKeyword}
+\lstcolorlet{keywordB}{codePackage}
+\lstcolorlet{keywordC}{codeFunction}
+\lstcolorlet{numbers}{codeNumber}
+\lstcolorlet{literals}{codeString}
+% named arguments ('n' in 'head(x, n = 3)') only slightly colored
+\definecolor{codeArgument}{HTML}{7A6A80}
+\mrSetStyle{argument}{\color{codeArgument}}
+% a little air between the lines of code, the same between every two lines (no \lineskip where a line is tall)
+\makeatletter\lst@AddToHook{Init}{\baselineskip=1.18\baselineskip\lineskiplimit=-\maxdimen}\makeatother
+\xlstmintedwithlangbadge
+\makeatletter
+\def\ca@Strut{\vphantom{\ttfamily\strut}}
+\makeatother
+
+\usepackage[style=numeric,sorting=nyt,defernumbers=true,backend=biber,maxbibnames=4,maxcitenames=2,sortcites=true]{biblatex}
+\addbibresource{references.bib}
+% a DOI is enough, the URL would only repeat it
+\AtEveryBibitem{\iffieldundef{doi}{}{\clearfield{url}}}
+\AtEveryBibitem{\clearfield{urlyear}\clearfield{urlmonth}\clearfield{urlday}\clearfield{isbn}\clearfield{issn}\clearfield{note}\clearfield{version}\clearfield{eprint}\clearfield{pages}\clearlist{location}}
+% the three kinds of references (keywords in references.bib): a colour for their citations, a marker in the bibliography
+\newcommand\CiteKind[3]{\csdef{cite@#1@colour}{#2}\csdef{cite@#1@icon}{#3}}
+\CiteKind{fundamentals}{plotblue}{\faStar}
+\CiteKind{resources}{Gentoo}{\faSearch}
+\CiteKind{niceToKnow}{Adelie}{\faLightbulbO}
+\newcommand\IfCiteKind[1]{%
+   \ifkeyword{fundamentals}{#1{fundamentals}}{\ifkeyword{resources}{#1{resources}}{#1{niceToKnow}}}}
+\newcommand\CiteColoured[2]{\textcolor{\csuse{cite@#1@colour}!85!black}{#2}}
+\DeclareFieldFormat{labelnumber}{\IfCiteKind{\CiteMark{#1}}}
+\def\CiteMark#1#2{\CiteColoured{#2}{#1}}
+
+% every citation of a frame is listed at its bottom with author, year, and venue
+\newif\ifListingCites
+\AtEveryCitekey{\ifListingCites\else\xifinlist{\thefield{entrykey}}\FrameCites{}{\listxadd\FrameCites{\thefield{entrykey}}}\fi}
+\newbibmacro{venue}{%
+   \iffieldundef{usera}{\iffieldundef{journaltitle}{\iffieldundef{booktitle}{\iflistundef{publisher}{\iflistundef{organization}%
+      {\iffieldundef{eprinttype}{}{\printfield{eprinttype}}}{\printlist{organization}}}{\printlist{publisher}}}%
+      {\printfield{booktitle}}}{\printfield{journaltitle}}}{\printfield{usera}}}
+% \FrameCite{key}: lists key at the bottom of the frame without a mark in the text
+\DeclareCiteCommand{\FrameCite}{}{}{}{}
+% a reference at the bottom of a frame links to its DOI, else to its URL, else to its entry in the bibliography
+\newbibmacro{footlink}[1]{%
+   \iffieldundef{doi}{\iffieldundef{url}{\bibhyperref{#1}}{\href{\thefield{url}}{#1}}}{\href{https://doi.org/\thefield{doi}}{#1}}}
+\DeclareCiteCommand{\FootCite}{}{%
+   \usebibmacro{footlink}{\mbox{\mkbibbrackets{\printfield{labelnumber}}\addnbspace
+   \printnames{labelname}\setunit{\addspace}\iffieldundef{year}{\printfield{urlyear}}{\printfield{year}}%
+   \setunit{\addcomma\addspace}\textit{\usebibmacro{venue}}}}}{\hskip 1em\relax}{}
+\DeclareCiteCommand{\FootCiteLong}{}{%
+   \usebibmacro{footlink}{\mbox{\mkbibbrackets{\printfield{labelnumber}}\addnbspace
+   \printnames{labelname}\setunit{\addspace}\iffieldundef{year}{\printfield{urlyear}}{\printfield{year}}%
+   \setunit{\addcolon\addspace}\printfield[titlecase]{title}\setunit{\addcomma\addspace}\textit{\usebibmacro{venue}}}}}{\hskip 1em\relax}{}
+% a single reference on a frame has room for its title
+% (the short form, when the long one would run into the R code links or off the page)
+\newdimen\FootCiteRoom
+\newcommand\FootCiteLongItem[1]{\CiteSep
+   \sbox0{\FootCiteLong{#1}}\ifdim\wd0>\FootCiteRoom\FootCite{#1}\else\FootCiteLong{#1}\fi
+   \def\CiteSep{\penalty0\hskip 1em\relax}}
+\newcommand\FootCiteItem[1]{\CiteSep\FootCite{#1}\def\CiteSep{\penalty0\hskip 1em\relax}}
+% a superscript cite does not push its line away from the one above
+% an hbox within \smash: the link takes its height from the enclosing box, which \smash would make zero
+\def\supercite#1{\textsuperscript{\smash{\hbox{\color{gray}\cite{#1}}}}}
+% [1,2] instead of [1, 2]
+\renewcommand*\multicitedelim{\addcomma}
+% one space after a full stop, as everywhere else
+\frenchspacing
+
+% \NoteRef{key}: speaker notes that live in notes/notes.tex (private), if that file exists
+\input{setup/noterefs}
+% speaker notes: pdfpc annotations in the animated and the notes build, beamer's own note pages only in the
+% notes build, and neither in the handouts
+\usepackage{letltxmacro}% the disabled pdfpc package uses \LetLtxMacro before it loads letltxmacro
+\ifdefined\LectureAnimated\else\ifdefined\LectureNotes\else
+   \PassOptionsToPackage{disable}{beamer-latex-pdfpc-notes}
+\fi\fi
+\usepackage{beamer-latex-pdfpc-notes}
+% the plain text of a note for pdfpc: its markers become lines and labels
+\ExplSyntaxOn
+\tl_new:N \l__lecture_pdfpc_tl
+\LetLtxMacro\LecturePdfpcPlain\note
+\NewDocumentCommand\LectureNoteForPdfpc{m}
+   {
+      \tl_set:Nn \l__lecture_pdfpc_tl {#1}
+      \regex_replace_all:nnN { \c{\#} } { \cO\# } \l__lecture_pdfpc_tl
+      % pdfpc renders markdown: the main message in bold, then the points as a list, then one paragraph per block
+      \regex_replace_once:nnN { \A MAIN : \s (.*?) (\s (?: POINT | SUB | NEXT | TIP | ASK | SHOW | EXTRA | DETOUR | ANECDOTE | READ ) : ) }
+         { **\1** \c{\\} \2 } \l__lecture_pdfpc_tl
+      \regex_replace_all:nnN { \s POINT : \s } { \c{\\}-\  } \l__lecture_pdfpc_tl
+      \regex_replace_all:nnN { \s SUB : \s } { \c{\\}\ \ \ \ -\  } \l__lecture_pdfpc_tl
+      \regex_replace_all:nnN { \s ASK : \s } { \c{\\}\c{\\}**Ask:**\  } \l__lecture_pdfpc_tl
+      \regex_replace_all:nnN { \s SHOW : \s } { \c{\\}\c{\\}**Show:**\  } \l__lecture_pdfpc_tl
+      \regex_replace_all:nnN { \s TIP : \s } { \c{\\}\c{\\}Tip:\  } \l__lecture_pdfpc_tl
+      \regex_replace_all:nnN { \s EXTRA : \s } { \c{\\}\c{\\}Extra:\  } \l__lecture_pdfpc_tl
+      \regex_replace_all:nnN { \s DETOUR : \s } { \c{\\}\c{\\}**Detour:**\  } \l__lecture_pdfpc_tl
+      \regex_replace_all:nnN { \s ANECDOTE : \s } { \c{\\}\c{\\}Anecdote:\  } \l__lecture_pdfpc_tl
+      \regex_replace_all:nnN { \s NEXT : \s } { \c{\\}\c{\\}Next:\  } \l__lecture_pdfpc_tl
+      \regex_replace_all:nnN { \s READ : \s } { \c{\\}\c{\\}Read:\  } \l__lecture_pdfpc_tl
+      \regex_replace_all:nnN { \s ANSWER : \s } { \c{\\}\c{\\}Answer:\  } \l__lecture_pdfpc_tl
+      \regex_replace_all:nnN { \s SOURCE : \s } { \c{\\}Source:\  } \l__lecture_pdfpc_tl
+      \exp_args:NV \LecturePdfpcPlain \l__lecture_pdfpc_tl
+   }
+\ExplSyntaxOff
+\ifdefined\LectureAnimated\ifdefined\LectureNotes\else\let\note\LectureNoteForPdfpc\fi\fi
+\ifdefined\LectureNotes
+   \input{setup/notes}
+\else
+   \newcommand\NoteTimetable{}
+   \newcommand\NoteBoard[1]{}
+\fi
+\setcounter{tocdepth}{1}

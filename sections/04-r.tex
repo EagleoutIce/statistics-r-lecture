@@ -1,0 +1,1177 @@
+\begin{frame}{Programming in R in One Slide}
+\PartSummary{%
+   \SummaryCard{Th}{Everything is a vector}{x * 2\quad x[x > 10]\\ sum(x > 10)}{Element by element, no loop. \texttt{TRUE} counts as 1.}
+   \SummaryCard{ExclamationTriangle}{Missing values spread}{mean(x, na.rm = TRUE)\\ is.na(x)}{\texttt{NA} turns every result into \texttt{NA}: drop it on purpose.}
+   \SummaryCard{Code}{Functions are values}{sapply(x, \textbackslash(v) v\textasciicircum{}2)\\ Filter()\quad Reduce()}{Map, filter, fold, and closures, as in any functional language.}
+   \SummaryCard{Table}{Tidy data, then dplyr}{d |> filter() |>\\ \ \ group\_by() |> summarize()}{One row per observation, read top to bottom.}
+   \SummaryCard{BarChart}{Plots from layers}{ggplot(d, aes(x, y)) +\\ \ \ geom\_point()}{Data, mapping, and one geom per chart type.}
+   \SummaryCard{LineChart}{Statistical models made easy}{t.test(y \textasciitilde{} g, d)\\ lm(y \textasciitilde{} x, d)}{Then check the residuals and report the interval.}
+}
+\NoteRef{r/programming-in-r-in-one-slide}
+\end{frame}
+
+\begin{frame}[optional]{A Short History of R}
+\centering
+\begin{tikzpicture}[
+   x=1.8mm,
+   history-line/.style={line width=1.85mm,PartTint!22,line cap=round,rounded corners=2pt},
+   history-event/.style={line width=.8mm,PartTint!75,{Circle[length=1.85mm]}-,shorten <=-.925mm,line cap=round},
+   history-box/.style={font=\scriptsize,text=black,inner sep=1.6pt,rounded corners=1.5pt},
+   history-name/.style={font=\scriptsize\sbseries,PartTint!70!black,anchor=south west},
+]
+   \foreach \y/\name/\step in {1.8/Language/1,0/Community/2,-1.8/Packages and repositories/3}
+      \draw[history-line,visible on=<\step->] (-6,0) -- (-3,\y) -- (56,\y) node[history-name,pos=0,xshift=1mm,yshift=.6mm] {\name};
+   \begin{scope}[visible on=<1->]
+      \HistoryEvent{1976}{1.8}{-1}{S at Bell Labs\supercite{plummer2026sat50}}
+      \HistoryEvent{1993}{1.8}{-1}{R by Ihaka and Gentleman\supercite{ihaka1996r}}
+      \HistoryEvent{2000}{1.8}{1}{R 1.0.0}
+      \HistoryEvent{2021}{1.8}{-1}{native pipe \texttt{|>}}
+   \end{scope}
+   \begin{scope}[visible on=<2->]
+      \HistoryEvent{1997}{0}{1}{R Core Team}
+      \HistoryEvent{2003}{0}{-1}{R Foundation}
+      \HistoryEvent{2011}{0}{1}{RStudio}
+      \HistoryEvent{2022}{0}{1}{RStudio renamed to Posit}
+      \HistoryEvent{2026}{0}{-1}{Rousseeuw Prize\supercite{rblog2026rousseeuw}}
+   \end{scope}
+   \begin{scope}[visible on=<3->]
+      \HistoryEvent{1997}{-1.8}{-1}{CRAN}
+      \HistoryEvent{2001}{-1.8}{1}{Bioconductor}
+      \HistoryEvent{2007}{-1.8}{-1}{ggplot2}
+      \HistoryEvent{2016}{-1.8}{1}{tidyverse\supercite{wickham2016tidyverse}}
+   \end{scope}
+\end{tikzpicture}
+\NoteRef{r/a-short-history-of-r}
+\end{frame}
+
+\begin{frame}[optional]{Who Keeps R Running}
+\centering
+\vspace*{3mm}
+\begin{tikzpicture}[
+   Team/.style={Card,anchor=north west,text width=56mm,font=\small,align=left,minimum height=36mm},
+]
+   \node[Team,draw=PartTint] (core) at (0,0) {%
+      \href{https://www.r-project.org/contributors.html}{\textsb{R Core Team}~\textcolor{gray}{\scriptsize\faExternalLink}}\\[1mm]
+      19 people who develop R itself, among them the founders Ihaka and Gentleman\\[2mm]
+      \textcolor{gray}{\footnotesize 2026: Rousseeuw Prize for Statistics to the R Project\supercite{rblog2026rousseeuw}}};
+   \node[Team,right=6mm of core.north east,anchor=north west,visible on=<2->] (cran) {%
+      \href{https://cran.r-project.org/CRAN_team.htm}{\textsb{CRAN Team}~\textcolor{gray}{\scriptsize\faExternalLink}}\\[1mm]
+      a handful of people, among them Kurt~Hornik and Uwe~Ligges, who check every submitted package\\[2mm]
+      \textcolor{gray}{\footnotesize more than \num{25000} packages, checked again with every new R version\supercite{cran2026packages}}};
+\end{tikzpicture}
+\NoteRef{r/who-keeps-r-running}
+\end{frame}
+
+\begin{frame}[fragile]{A Language for Data Analysis}
+\begin{itemize}
+   \item Built for statistics: \bR{NA}, factors, data frames, and formulas are built in
+   \item<2-> \enquote{Everything that exists is an object. Everything that happens is a function call.}\supercite{chambers2014oop}
+   \item<3-> Functions can read the code of their arguments: packages add small languages
+\end{itemize}
+\vspace{4mm}
+\centering
+\begin{tikzpicture}[DSL/.style={Card,text width=38mm,align=center,font=\scriptsize,minimum height=21mm}]
+   \node[DSL,draw=PartTint,visible on=<4->] (fm) {\textsb{\small Formulas}\\[1.5mm]\bR{body_mass ~ species}\\[1.5mm]\textcolor{gray}{a model in one line}};
+   \node[DSL,draw=plotblue,right=3mm of fm,visible on=<5->] (gg) {\textsb{\small ggplot2}\\[1.5mm]\bR{ggplot(penguins) +}\\\bR{geom_point()}\\[1.5mm]\textcolor{gray}{a plot as layers}};
+   \node[DSL,draw=PartTint,right=3mm of gg,visible on=<6->] (dp) {\textsb{\small dplyr}\\[1.5mm]\bR{filter(body_mass > 6000)}\\[1.5mm]\textcolor{gray}{verbs on bare column names}};
+\end{tikzpicture}
+\ShowPerson{gentleman}
+\ShowPerson{ihaka}[34mm]
+\KeyMessage<7->{R is a domain-specific language for data analysis,\supercite{ihaka1996r} and packages build smaller languages inside it.}
+\NoteRef{r/a-language-for-data-analysis}
+\end{frame}
+
+\newcommand\CommandRow[2]{\texttt{#1}\hfill\textcolor{gray}{#2}\\}
+% \CommandRowR{code}{what}: the same with R highlighting, for code without TeX escapes
+\newcommand\CommandRowR[2]{\bR{#1}\hfill\textcolor{gray}{#2}\\}
+\begin{frame}{First Commands}
+\centering
+\begin{tikzpicture}[Cmd/.style={Card,text width=62mm,align=left,font=\footnotesize,minimum height=27mm,anchor=north west}]
+   \node[Cmd,visible on=<1->] at (0,0) {\textsb{\small Packages}\\[1mm]
+      \CommandRowR{install.packages("dplyr")}{once}
+      \CommandRowR{library(dplyr)}{in every script}
+      \CommandRowR{dplyr::filter()}{one function}};
+   \node[Cmd,visible on=<2->] at (70mm,0) {\textsb{\small Data in and out}\\[1mm]
+      \CommandRowR{d <- read.csv("data.csv")}{read}
+      \CommandRowR{write.csv(d, "out.csv")}{write}
+      \CommandRowR{penguins}{built in}};
+   \node[Cmd,visible on=<3->] at (0,-29mm) {\textsb{\small A first look}\\[1mm]
+      \CommandRowR{head(d)}{the first rows}
+      \CommandRowR{str(d)}{columns and types}
+      \CommandRowR{summary(d)}{per column}};
+   \node[Cmd,visible on=<4->] at (70mm,-29mm) {\textsb{\small Names, help, comments}\\[1mm]
+      \CommandRowR{x <- 1}{assign}
+      \CommandRowR{?mean}{help}
+      \CommandRow{\# a comment}{why, not what}};
+\end{tikzpicture}
+\KeyMessage<5->{Enough to start: load a package, read the data, look at it, ask for help.}
+\Stage{Import}
+\NoteRef{r/first-commands}
+\end{frame}
+
+\begin{frame}{R Syntax at a Glance}
+\centering
+\begin{tikzpicture}[Cmd/.style={Card,text width=66mm,align=left,font=\scriptsize,minimum height=25mm,anchor=north west}]
+   \node[Cmd,visible on=<1->] at (0,0) {\textsb{\small Values and names}\\[1mm]
+      \CommandRowR{x <- 3}{assign, read \enquote{gets}}
+      \CommandRow{"a"\quad TRUE\quad NA\quad NULL}{text, logical, missing, empty}
+      \CommandRowR{1:5}{the sequence 1 to 5}
+      \CommandRowR{c(4, 8, 15)}{combine into a vector}};
+   \node[Cmd,visible on=<2->] at (72mm,0) {\textsb{\small Calls}\\[1mm]
+      \CommandRowR{mean(x, na.rm = TRUE)}{arguments by name}
+      \CommandRowR{x |> sort() |> head(3)}{pipe: \texttt{head(sort(x), 3)}}
+      \CommandRow{\textbackslash(v) v + 1}{a function without a name}
+      \CommandRow{y \textasciitilde{} x + g}{a formula: kept, not computed}};
+   \node[Cmd,visible on=<3->] at (0,-28mm) {\textsb{\small Indexing}\\[1mm]
+      \CommandRow{x[1]\quad x[-1]}{first, all but the first}
+      \CommandRowR{x[x > 10]}{by a condition}
+      \CommandRow{d\$mass\quad d[["mass"]]}{one column}
+      \CommandRowR{d[1:3, c("id", "mass")]}{rows, columns}};
+   \node[Cmd,visible on=<4->] at (72mm,-28mm) {\textsb{\small Control flow}\\[1mm]
+      \CommandRowR{if (n > 0) a else b}{one condition}
+      \CommandRowR{for (v in x) print(v)}{rarely needed}
+      \CommandRow{f <- function(x, k = 2) \{}{a default value}
+      \CommandRow{\quad x\textasciicircum{}k \}}{the last value is returned}};
+\end{tikzpicture}
+\NoteRef{r/syntax-at-a-glance}
+\end{frame}
+
+% \TitleStep{overlay}{suffix}: a small gray suffix of the frame title that names the card of this overlay;
+% the handout shows all cards at once, so it has none
+\newcommand\TitleStep[2]{\only<#1|handout:0>{\textcolor{gray}{\small\textmd{: #2}}}}
+\begin{frame}{R Semantics at a Glance\TitleStep{1}{Vectors and Values}\TitleStep{2}{Vectorization}\TitleStep{3}{Missing Values}\TitleStep{4}{Copies and Laziness}}
+\centering
+\begin{tikzpicture}[Cmd/.style={Card,text width=66mm,align=left,font=\scriptsize,minimum height=25mm,anchor=north west}]
+   \node[Cmd,visible on=<1->] at (0,0) {\textsb{\small Everything is a vector}\\[1mm]
+      \CommandRowR{length(3)}{1: a vector of length one}
+      \CommandRowR{c(1, "a")}{\texttt{"1" "a"}: one type each}
+      \CommandRowR{d <- data.frame(...)}{a list of columns}
+      \CommandRowR{sum(x > 10)}{\texttt{TRUE} counts as 1}};
+   \node[Cmd,visible on=<2->] at (72mm,0) {\textsb{\small Vectorized}\\[1mm]
+      \CommandRow{x * 2\quad x + y}{element by element}
+      \CommandRowR{1:6 + c(0, 10)}{\texttt{1 12 3 14 5 16}: recycled}
+      \CommandRow{sqrt(x)\quad round(x, 1)}{every function, too}
+      \CommandRowR{ifelse(x > 10, "a", "b")}{decides per element}};
+   \node[Cmd,visible on=<3->] at (0,-28mm) {\textsb{\small Missing values spread}\\[1mm]
+      \CommandRow{NA + 1\quad mean(c(1, NA))}{both \texttt{NA}}
+      \CommandRowR{mean(x, na.rm = TRUE)}{skip on purpose}
+      \CommandRowR{x == NA}{\texttt{NA}, never \texttt{TRUE}}
+      \CommandRowR{is.na(x)}{the right test}};
+   \node[Cmd,visible on=<4->] at (72mm,-28mm) {\textsb{\small Copies, not references}\\[1mm]
+      \CommandRowR{f(d)}{cannot change \texttt{d}}
+      \CommandRow{d\$x <- 1}{binds \texttt{d} to a changed copy}
+      \CommandRowR{filter(d, mass > 4000)}{lazy: \texttt{mass} is a column}
+      \CommandRowR{x <- y; y[1] <- 0}{\texttt{x} keeps the old values}};
+\end{tikzpicture}
+\NoteRef{r/semantics-at-a-glance}
+\end{frame}
+
+\begin{frame}{Types, for Computer Scientists}
+\centering
+\begin{tikzpicture}[Cmd/.style={Card,text width=66mm,align=left,font=\scriptsize,minimum height=25mm,anchor=north west}]
+   \node[Cmd,visible on=<1->] at (0,0) {\textsb{\small Base types: \texttt{typeof()}}\\[1mm]
+      \CommandRow{TRUE\quad 1L\quad 1.5\quad "a"}{logical, integer, double, character}
+      \CommandRowR{list(1, "a", mean)}{list: any values, nested}
+      \CommandRowR{NULL}{the empty value}
+      \CommandRow{mean\quad quote(x + 1)}{closure, language: code is data}};
+   \node[Cmd,visible on=<2->] at (72mm,0) {\textsb{\small Attributes build richer types}\\[1mm]
+      \CommandRowR{matrix(1:6, 2)}{integer + \texttt{dim}}
+      \CommandRowR{factor(c("a", "b"))}{integer + \texttt{levels} + \texttt{class}}
+      \CommandRowR{Sys.Date()}{double + \texttt{class}}
+      \CommandRowR{data.frame(x = 1:2)}{list + \texttt{names} + \texttt{class}}};
+   \node[Cmd,visible on=<3->] at (0,-28mm) {\textsb{\small Special values}\\[1mm]
+      \CommandRowR{NA}{missing, in any type}
+      \CommandRowR{NULL}{nothing at all}
+      \CommandRow{0 / 0\quad 1 / 0}{\texttt{NaN}, \texttt{Inf}}
+      \CommandRow{is.na(x)\quad is.null(x)}{the tests}};
+   \node[Cmd,visible on=<4->] at (72mm,-28mm) {\textsb{\small Typing discipline}\\[1mm]
+      \CommandRowR{x <- 1; x <- "a"}{dynamic, no declarations}
+      \CommandRowR{1 == "1"}{\texttt{TRUE}: silent coercion}
+      \CommandRowR{is.numeric(x)}{check at run time}
+      \CommandRowR{stopifnot(x > 0)}{fail early, in your own code}};
+\end{tikzpicture}
+\NoteRef{r/types-for-computer-scientists}
+\end{frame}
+
+\NextNoteRef{r/quiz-mixing-types}
+\Quiz{Mixing Types}{What does \texttt{c(1, "2", TRUE)} return?}
+   {\texttt{c(1, 2, 1)}}{\texttt{c("1", "2", "TRUE")}}{an error}{\texttt{list(1, "2", TRUE)}}{B}
+   {A vector holds one type, so all values move up to the most general one, here character. \texttt{TRUE} becomes \texttt{"TRUE"}, not \texttt{"1"}.}
+
+\begin{frame}[fragile]{Functions Are Values}
+\begin{minipage}{.6\textwidth}
+\footnotesize
+\begin{rsession}
+square <- \(x) x^2!*\CodeMark{lam}*!
+sapply(1:5, square)!*\CodeMark{map}*!
+Filter(\(x) x %% 2 == 0, 1:10)!*\CodeMark{filter}*!
+Reduce(`+`, 1:5, accumulate = TRUE)!*\CodeMark{reduce}*!
+adder <- function(k) \(x) x + k!*\CodeMark{factory}*!
+add2 <- adder(2)
+add2(40)!*\CodeMark{closure}*!
+tapply(penguins$body_mass,
+  penguins$species, mean, na.rm = TRUE)!*\CodeMark{split}*!
+\end{rsession}
+\end{minipage}
+\CodeNote<1->{lam}{a function is a value like any other}
+\CodeNote<2->{map}{higher-order: map a function over a vector}
+\CodeNote<3->{filter}{filter \dots}
+\CodeNote<4->{reduce}{\dots{} and fold}
+\CodeNote<5->{factory}{a function that returns a function}
+\CodeNote<7->{closure}{it remembers \bR{k}: a closure}
+\CodeNote<8->{split}{one value per group: split, apply, combine}
+\NoteRef{r/functions-are-values}
+\end{frame}
+
+
+\begin{frame}[fragile,optional]{Data Are Vectors}
+\begin{minipage}{.6\textwidth}
+\footnotesize
+\begin{rsession}
+x <- c(4, 8, 15, 16, 23, 42)
+x * 2!*\CodeMark{mul}*!
+x[x > 10]!*\CodeMark{idx}*!
+|dim|length(x)|dim|
+round(sd(x), 1)!*\CodeMark{one}*!
+summary(x)!*\CodeMark{sum}*!
+\end{rsession}
+\end{minipage}
+\CodeNote<2->{mul}{element by element, no loop}
+\CodeNote<3->{idx}{index with a logical vector}
+\CodeNote<5->{one}{one number: a vector of length one}
+\CodeNote<6->{sum}{the 42 pulls the mean above the median}
+\begin{tikzpicture}[overlay,remember picture]
+   \node[Card,draw=PartTint,anchor=south east,font=\scriptsize,text width=48mm,align=left,visible on=<7->] at([xshift=-8mm,yshift=14mm]current page.south east) {%
+      \textsb{\small Vectors are everywhere}\\[1mm]
+      \texttt{3}: a vector of length one\\ \texttt{penguins\$body\_mass}: a column is a vector\\ \texttt{penguins}: a list of column vectors};
+\end{tikzpicture}
+\NoteRef{r/data-are-vectors}
+\end{frame}
+
+\begin{frame}{Important R Types}
+\centering
+% the base types climb a staircase; the steps are high enough for the arrow tips to fit on the vertical part
+\begin{tikzpicture}[Ty/.style={Card,text width=17mm,align=center,font=\footnotesize,minimum height=10mm},Up/.style={Link,BaseGray,thick,rounded corners=2pt}]
+   \foreach \i/\name/\ex [count=\n] in {0/logical/{TRUE},1/integer/{1L},2/double/{1.5},3/complex/{1+2i},4/character/{"a"},5/list/{list(1, "a")}}
+      \node[Ty,draw=PartTint,visible on=<\n->] (t\n) at ({\i*24mm},{\i*9mm}) {\textsb{\small\name}\\[.4mm]\texttt{\tiny\ex}};
+   \foreach \a/\b in {1/2,2/3,3/4,4/5,5/6}
+      \draw[Up,visible on=<\b->] (t\a.east) -| (t\b.south);
+   \node[anchor=north west,font=\footnotesize,text=gray,align=left,visible on=<7->] at(t1.west |- t6.north) {%
+      \texttt{c(1, "a")} \(\to\) \texttt{"1" "a"}};
+   % built on a base type with attributes, in the free space right of the staircase
+   \foreach \base/\name/\what/\pos [count=\n from 8] in {t2/factor/{integer + levels}/{(60mm,0mm)},t3/Date/{double + class}/{(86mm,9mm)}} {
+      \node[Ty,draw=plotblue,dashed,minimum height=9mm,visible on=<\n->] (d\n) at \pos {\textsb{\footnotesize\texttt{\name}}\\[.4mm]\textcolor{gray}{\tiny\what}};
+      \draw[Up,plotblue,dashed,visible on=<\n->] ([xshift=5mm]\base.south) |- (d\n.west);
+   }
+   \node[Ty,draw=plotblue,dashed,minimum height=9mm,visible on=<10->] (d10) at (120mm,24mm) {\textsb{\footnotesize\texttt{data.frame}}\\[.4mm]\textcolor{gray}{\tiny list of equal-length columns}};
+   \draw[Up,plotblue,dashed,visible on=<10->] ([xshift=5mm]t6.south) -- ([xshift=5mm]d10.north);
+\end{tikzpicture}
+\KeyMessage<11->{Mix types in a vector, and R moves them all up, silently.}
+\Stage{Transform}
+\NoteRef{r/the-type-lattice}
+\end{frame}
+
+\begin{frame}[fragile]{Vectorization}
+\begin{minipage}{.6\textwidth}
+\footnotesize
+\begin{rsession}
+x <- c(4, 8, 15, 16, 23, 42)
+|dim|y <- c()|dim|
+for (v in x) y <- c(y, v^2)!*\CodeMark{loop}*!
+|dim|y|dim|
+x^2!*\CodeMark{vec}*!
+sum(x > 10)!*\CodeMark{sum}*!
+mean(x > 10)!*\CodeMark{mean}*!
+ifelse(x > 10, "big", "small")!*\CodeMark{if}*!
+\end{rsession}
+\end{minipage}
+\CodeNote<3->{loop}{a loop grows \bR{y} value by value}
+\CodeNote<5->{vec}{the same for the whole vector}
+\CodeNote<6->{sum}{\bR{TRUE} counts as 1: how many \dots}
+\CodeNote<7->{mean}{\dots{} and which share}
+\CodeNote<8->{if}{decides per element}
+\NoteRef{r/vectorization}
+\end{frame}
+
+\begin{frame}[fragile]{Building Blocks}
+\begin{minipage}{.6\textwidth}
+\footnotesize
+\begin{rsession}
+typeof(1:3)!*\CodeMark{type}*!
+c(1, "a", TRUE)
+f <- factor(c("low", "high", "low"))
+as.integer(f)!*\CodeMark{codes}*!
+levels(f)!*\CodeMark{lev}*!
+df <- data.frame(id = 1:2, ok = c(TRUE, NA))
+is.list(df)!*\CodeMark{list}*!
+\end{rsession}
+\end{minipage}
+\CodeNote<1->{type}{an atomic vector holds one type}
+\CodeNote<4->{codes}{a factor: integer codes \dots}
+\CodeNote<5->{lev}{\dots{} plus their labels}
+\CodeNote<7->{list}{a data frame: a list of columns}
+\KeyMessage<8->{Functions do not change their inputs: R copies on modify (environments are the exception).}
+\NoteRef{r/building-blocks}
+\end{frame}
+
+
+\begin{frame}[fragile]{Common Pitfalls}
+\begin{minipage}{.6\textwidth}
+\footnotesize
+\begin{rsession}
+mean(c(1, NA, 3))!*\CodeMark{na}*!
+mean(c(1, NA, 3), na.rm = TRUE)!*\CodeMark{rm}*!
+1:6 + 1:2!*\CodeMark{rec}*!
+\end{rsession}
+\end{minipage}
+\CodeNote<1->{na}{\bR{NA} spreads, on purpose}
+\CodeNote<2->{rm}{drops the missing values, silently}
+\CodeNote<3->{rec}{the shorter vector is recycled, silently}
+\NoteRef{r/common-pitfalls}
+\end{frame}
+
+\begin{frame}[fragile]{One Summary per Group}
+\begin{minipage}{.6\textwidth}
+\footnotesize
+\begin{rsession}
+masses <- split(penguins$body_mass,!*\CodeMark{split}*!
+  penguins$species)
+sapply(masses, median|dim|, na.rm = TRUE|dim|)!*\CodeMark{sapply}*!
+tapply(penguins$body_mass, penguins$species,!*\CodeMark{tapply}*!
+  median|dim|, na.rm = TRUE|dim|)
+\end{rsession}
+\end{minipage}
+\CodeNote<1->{split}{cut a vector into groups}
+\CodeNote<2->{sapply}{apply a function to each group}
+\CodeNote<3->{tapply}{both in one call}
+\PinguSays<4->{No package needed. Soon we do the same with \texttt{dplyr}.}
+\Stage{Transform}
+\NoteRef{r/one-summary-per-group}
+\end{frame}
+
+\begin{frame}[fragile,optional]{Counting Missing Values}
+\begin{minipage}{.6\textwidth}
+\footnotesize
+\begin{rsession}
+table(penguins$sex, dnn = NULL)!*\CodeMark{t1}*!
+table(penguins$sex, useNA = "ifany", dnn = NULL)!*\CodeMark{t2}*!
+colSums(is.na(penguins))!*\CodeMark{cs}*!
+\end{rsession}
+\end{minipage}
+\CodeNote<1->{t1}{drops \bR{NA} silently}
+\CodeNote<2->{t2}{counts them too}
+\CodeNote<3->{cs}{missing values per column}
+\Stage{Transform}
+\NoteRef{r/counting-missing-values}
+\end{frame}
+
+\begin{frame}{Tidy Data}
+\hypertarget<1>{later-tidy}{}%
+\begin{tikzpicture}[
+   Cell/.style={draw=white,fill=BackGray!50!SoftGray,minimum width=14mm,minimum height=5.5mm,font=\tiny\ttfamily,thick},
+   Head/.style={Cell,fill=SoftGray,font=\tiny\ttfamily\bfseries},
+]
+   \matrix[matrix of nodes,ampersand replacement=\&,nodes={Cell},row 1/.style={nodes={Head}},column sep=0pt,row sep=0pt] (tbl) {
+      species \& island \& bill\_len \& body\_mass \\
+      Adelie \& Torgersen \& 39.1 \& 3750 \\
+      Adelie \& Torgersen \& 39.5 \& 3800 \\
+      Gentoo \& Biscoe \& 46.1 \& 4500 \\
+      Chinstrap \& Dream \& 46.5 \& 3500 \\
+   };
+   \onslide<2->{
+      \node[fit=(tbl-1-3)(tbl-5-3),draw=plotblue,very thick,rounded corners=2pt,inner sep=1pt] (var) {};
+      \node[above=2mm,font=\small,plotblue] at(var.north) {each variable is a column};
+   }
+   \onslide<3->{
+      \node[fit=(tbl-3-1)(tbl-3-4),draw=PartTint,very thick,rounded corners=2pt,inner sep=1pt] (obs) {};
+      \draw[Link,PartTint] (obs.east) -- ++(8mm,0) node[right,font=\small] {each observation is a row};
+   }
+   \onslide<4->{
+      \node[fit=(tbl-4-4),draw=plotblue,very thick,rounded corners=2pt,inner sep=0pt] (val) {};
+      \draw[Link,plotblue] (val.south) |- ++(10mm,-12mm) node[right,font=\small] {each value is a cell};
+   }
+\end{tikzpicture}
+\KeyMessage<5->{Tidy data go straight into \bR[mrpackage]{dplyr}, \bR[mrpackage]{ggplot2}, and \bR{lm()}, without reshaping.\supercite{wickham2014tidy}}
+\Tutorial{https://r4ds.hadley.nz/data-tidy.html}{R for Data Science: tidying}
+\Stage{Tidy}
+\NoteRef{r/tidy-data}
+\end{frame}
+
+\begin{frame}[fragile,optional]{From Wide to Long}
+\begin{minipage}{.6\textwidth}
+\footnotesize
+\begin{rsession}
+wide <- data.frame(
+  |dim|species = c("Adelie", "Gentoo"),|dim|
+  y2007 = c(3696, 5071),!*\CodeMark{yr}*!
+  |dim|y2008 = c(3742, 5020))|dim|
+wide
+long <- tidyr::pivot_longer(wide, -species,!*\CodeMark{piv}*!
+  names_to = "year", names_prefix = "y",
+  names_transform = as.integer, values_to = "mass")
+as.data.frame(long)!*\CodeMark{long}*!
+\end{rsession}
+\end{minipage}
+\CodeNote<2->{yr}{the year hides in the column names (made-up values)}
+\CodeNote<3->{piv}{turn it into a variable}
+\CodeNote<4->{long}{now \bR{lm(mass ~ year)} and \bR{aes(x = year)} just work}
+\Stage{Tidy}
+\NoteRef{r/from-wide-to-long}
+\end{frame}
+
+% the same pipeline on nine made-up penguins, one picture per step
+\newcommand\TRow[5][]{%
+   \node[TCell,minimum width=8mm,#1] at (0,-#2*4.2mm) {#3};
+   \node[TCell,minimum width=6mm,#1] at (7mm,-#2*4.2mm) {#4};
+   \node[TCell,minimum width=9mm,#1] at (14.5mm,-#2*4.2mm) {#5};}
+\begin{frame}[fragile]{Transforming Data}
+\hypertarget<1>{later-transform}{}%
+\AnimateCode{onslide={
+   /1: start from the data,
+   /2: drop rows without sex,
+   /3: one group per species and sex,
+   4,
+   /5: heaviest first,
+   0
+}}
+\footnotesize
+\begin{minted}[mrprefix={library(dplyr)}]{R}
+heaviest <- penguins |>
+  filter(!is.na(sex)) |>
+  group_by(species, sex) |>
+  summarize(mass = round(mean(body_mass)), n = n(),
+    .groups = "drop") |>
+  arrange(desc(mass))
+\end{minted}
+\endAnimateCode
+\begin{tikzpicture}[overlay,remember picture,
+   TCell/.style={draw=white,fill=BackGray!50!SoftGray,font=\tiny\ttfamily,minimum height=4mm,inner sep=0pt,thick},
+   Gone/.style={fill=white,text=SoftGray},
+   G1/.style={fill=PartOne!25},G2/.style={fill=PartTwo!25},G3/.style={fill=PartTint!25},G4/.style={fill=plotblue!25},G5/.style={fill=Warn!25},
+   Step/.style={font=\scriptsize\sbseries,PartTint,anchor=south west}]
+   \begin{scope}[shift={([xshift=-30mm,yshift=-26mm]current page.north east)}]
+   \only<1|handout:0>{
+      \node[Step] at (-4mm,0) {9 rows};
+      \foreach \i/\sp/\sx/\m in {1/A/f/3500,2/A/m/4000,3/G/NA/4600,4/C/f/3500,5/G/m/5500,6/A/f/3400,7/C/m/3900,8/A/NA/3700,9/G/m/5600}{\TRow{\i}{\sp}{\sx}{\m}}}
+   \only<2|handout:0>{
+      \node[Step] at (-4mm,0) {\bR{filter()}: 7 rows};
+      \foreach \i/\sp/\sx/\m/\st in {1/A/f/3500/,2/A/m/4000/,3/G/NA/4600/Gone,4/C/f/3500/,5/G/m/5500/,6/A/f/3400/,7/C/m/3900/,8/A/NA/3700/Gone,9/G/m/5600/}{\TRow[\st]{\i}{\sp}{\sx}{\m}}
+      \foreach \i in {3,8}{\draw[Warn,thick] (-5mm,-\i*4.2mm) -- (20mm,-\i*4.2mm);}}
+   \only<3|handout:0>{
+      \node[Step] at (-4mm,0) {\bR{group_by()}: 5 groups};
+      \foreach \i/\sp/\sx/\m/\st in {1/A/f/3500/G1,2/A/m/4000/G2,4/C/f/3500/G3,5/G/m/5500/G5,6/A/f/3400/G1,7/C/m/3900/G4,9/G/m/5600/G5}{\TRow[\st]{\i}{\sp}{\sx}{\m}}}
+   \only<4|handout:0>{
+      \node[Step] at (-4mm,0) {\bR{summarize()}: 1 row per group};
+      \foreach \i/\sp/\sx/\m/\st in {1/A/f/3450/G1,2/A/m/4000/G2,3/C/f/3500/G3,4/C/m/3900/G4,5/G/m/5550/G5}{\TRow[\st]{\i}{\sp}{\sx}{\m}}}
+   \only<5->{
+      \node[Step] at (-4mm,0) {\bR{arrange(desc())}};
+      \foreach \i/\sp/\sx/\m/\st in {1/G/m/5550/G5,2/A/m/4000/G2,3/C/m/3900/G4,4/C/f/3500/G3,5/A/f/3450/G1}{\TRow[\st]{\i}{\sp}{\sx}{\m}}}
+   \end{scope}
+\end{tikzpicture}%
+\begin{uncoverenv}<6->
+\scriptsize
+\begin{rsession}[animate=false,play=false]
+heaviest
+\end{rsession}
+\end{uncoverenv}
+\Tutorial{https://r4ds.hadley.nz/data-transform.html}{R for Data Science: transforming}
+\Stage{Transform}
+\NoteRef{r/transforming-data}
+\end{frame}
+
+\StartTiming{3.code1}
+\begin{frame}{Live Coding: Penguin Census}
+\Mission{Which island has the heaviest penguins?\\ And is that a fair comparison?}
+   {\item Count the missing values per column
+    \item Mean body mass per island, with \(n\), heaviest first}
+   {\bR{colSums(is.na(d))}, \bR{filter()}, \bR{group_by()}, \bR{summarize()}, \bR{n()}, \bR{arrange(desc())}}
+   {10}{in pairs}{templates/penguin-census.R}{ex-r-census}
+\Stage{Transform}
+\NoteRef{r/live-coding-penguin-census}
+\end{frame}
+\StartTiming{3.code1a}
+
+\begin{frame}[fragile,solution]{Penguin Census: A Possible Solution}
+\begin{columns}[t,onlytextwidth]
+   \begin{column}{.47\textwidth}
+\tiny
+\textsb{1.\ Missing values per column}
+\begin{rsession}
+colSums(is.na(penguins))
+\end{rsession}
+\textsb{2.\ Body mass per island}
+\begin{rsession}
+penguins |>
+  filter(!is.na(body_mass)) |>
+  group_by(island) |>
+  summarize(n = n(),
+    mass = round(mean(body_mass))) |>
+  arrange(desc(mass)) |>
+  as.data.frame()
+\end{rsession}
+   \end{column}
+   \begin{column}{.48\textwidth}
+\tiny
+\begin{uncoverenv}<2->
+\textsb{And per island \emph{and} species?}
+\begin{rsession}
+penguins |>
+  filter(!is.na(body_mass)) |>
+  group_by(island, species) |>
+  summarize(n = n(),
+    mass = round(mean(body_mass)),
+    .groups = "drop") |>
+  as.data.frame()
+\end{rsession}
+\end{uncoverenv}
+   \end{column}
+\end{columns}
+\KeyMessage<3->{Biscoe is heaviest only because the Gentoo live there.\\ Within a species, the islands hardly differ.}
+\Stage{Transform}
+\NoteRef{r/penguin-census-our-answer}
+\end{frame}
+\StartTiming{3.b}
+
+\begin{frame}[fragile,optional]{Growing Small Languages}
+\begin{minipage}{.6\textwidth}
+\footnotesize
+\begin{rsession}
+`%+-%` <- function(x, e) x + c(-e, e)!*\CodeMark{op}*!
+5 %+-% 1.96
+say <- function(expr)
+  cat(deparse(substitute(expr)), "=", expr, "\n")!*\CodeMark{sub}*!
+say(sqrt(16) + 1)
+subset(penguins, body_mass > 6000, species)!*\CodeMark{nse}*!
+\end{rsession}
+\end{minipage}
+\CodeNote<2->{op}{operators are functions: define your own}
+\CodeNote<4->{sub}{the code of an argument, not its value}
+\CodeNote<5->{nse}{bare column names, no \texttt{penguins\$}}
+\KeyMessage<6->{The same trick powers \bR{aes()}, \bR{filter()}, and \bR{y ~ x}.\supercite{wickham2019advr}}
+\Tutorial{https://adv-r.hadley.nz/metaprogramming.html}{Advanced R: metaprogramming}
+\NoteRef{r/growing-small-languages}
+\end{frame}
+
+
+\begin{frame}{Anatomy of a Plot}
+\centering
+\vspace*{4mm}
+\def\LayerGap{18mm}
+\begin{tikzpicture}[scale=1.1,every node/.append style={transform shape},Term/.style={font=\tiny\ttfamily,BaseGray,anchor=north,align=center,text width=17mm}]
+   \foreach \i/\name/\term in {
+      0/Panel/{panel.background},
+      1/Grid lines/{panel.grid},
+      2/Axes/{axis.ticks\\axis.text},
+      3/Titles/{axis.title\\plot.title},
+      4/Geometries/{\textsf{a layer,}\\\textsf{not in theme()}},
+      5/Legend/{legend.key\\legend.text},
+      6/Facets/{strip.background\\strip.text}%
+   } {
+      \pgfmathtruncatemacro\step{\i+1}
+      \begin{scope}[layer=\i,visible on=<\step->]
+         \path[Plane=PartTint] (0,0) -- (4,0) -- (4,3) -- (0,3) -- cycle;
+         % name and theme elements centered on the plane, all on one line above and below
+         \coordinate (mid-\i) at (2,1.5);
+         \coordinate (top-\i) at (4,3);
+         \coordinate (bottom-\i) at (0,0);
+      \end{scope}
+      \node[LayerName=PartTint,visible on=<\step->] at([yshift=3mm]mid-\i |- top-\i) {\name};
+      \node[Term,visible on=<\step->] at([yshift=-2.5mm]mid-\i |- bottom-\i) {\term};
+   }
+   \begin{scope}[layer=0]
+      \fill[BackGray!80!SoftGray] \PlaneRect{.5}{.5}{3.7}{2.6};
+   \end{scope}
+   \begin{scope}[layer=1,visible on=<2->]
+      \foreach \x in {1.3,2.1,2.9} \draw[SoftGray,thin] (\x,.5) -- (\x,2.6);
+      \foreach \y in {1.1,1.7,2.3} \draw[SoftGray,thin] (.5,\y) -- (3.7,\y);
+      \foreach \x in {1.7,2.5,3.3} \draw[SoftGray!50,very thin,dashed] (\x,.5) -- (\x,2.6);
+   \end{scope}
+   \begin{scope}[layer=2,visible on=<3->,BaseGray]
+      \foreach \x in {1.3,2.1,2.9} \draw (\x,.5) -- (\x,.38);
+      \foreach \y in {1.1,1.7,2.3} \draw (.5,\y) -- (.38,\y);
+      \foreach \x in {1.3,2.1,2.9} \fill (\x,.22) circle[radius=.06];
+      \foreach \y in {1.1,1.7,2.3} \fill (.2,\y) circle[radius=.06];
+   \end{scope}
+   \begin{scope}[layer=3,visible on=<4->,line width=1.6pt,BaseGray!70]
+      \draw (1.4,.05) -- (2.8,.05);
+      \draw (.05,1.1) -- (.05,2.2);
+      \draw[line width=2.2pt,BaseGray] (.6,2.85) -- (2.9,2.85);
+   \end{scope}
+   \begin{scope}[layer=4,visible on=<5->]
+      \foreach \x/\y in {.9/1,1.2/1.3,1.4/1.1,1.1/1.5} \node[LayerDot=Adelie] at (\x,\y) {};
+      \foreach \x/\y in {1.9/1.5,2.2/1.8,2.4/1.6} \node[LayerDot=Chinstrap] at (\x,\y) {};
+      \foreach \x/\y in {2.9/2,3.2/2.3,3.5/2.2,3.3/2.5} \node[LayerDot=Gentoo] at (\x,\y) {};
+   \end{scope}
+   \begin{scope}[layer=5,visible on=<6->]
+      \foreach \c/\y in {Adelie/2.4,Chinstrap/2,Gentoo/1.6} {
+         \node[LayerDot=\c] at (1.2,\y) {};
+         \draw[BaseGray!70,line width=1.4pt] (1.5,\y) -- (2.6,\y);
+      }
+   \end{scope}
+   \begin{scope}[layer=6,visible on=<7->]
+      \foreach \x in {.3,1.5,2.7} {
+         \draw[BaseGray!70] \PlaneRect{\x}{.4}{\x+1}{2.3};
+         \fill[SoftGray] \PlaneRect{\x}{2.3}{\x+1}{2.65};
+      }
+   \end{scope}
+\end{tikzpicture}
+\KeyMessage<8->{The names below are those of \bR{theme()}: \bR{theme(panel.grid.minor = element_blank())} drops the minor grid lines.\supercite{wickham2016ggplot2book}}
+\Stage{Visualize}
+\NoteRef{r/anatomy-of-a-plot}
+\end{frame}
+
+\begin{frame}{The Grammar of Graphics}
+\begin{tikzpicture}[
+   Code/.style={font=\scriptsize\ttfamily,anchor=west,inner sep=1pt},
+   Part/.style={font=\scriptsize,anchor=west,align=left,text width=42mm},
+]
+   \foreach[count=\i] \c/\code/\name/\what in {
+      plotblue/{\bR{ggplot(penguins,}}/Data/{a tidy data frame\supercite{wilkinson2005grammar,wickham2010layered}},
+      plotblue/{\ \ \bR{aes(flipper_len, body_mass, color = species)) +}}/Mapping/{columns to \(x\), \(y\), and color},
+      PartTint/{\ \ \bR{geom_point() +}}/Geometry/{\textsb{how} each row is drawn},
+      PartTint/{\ \ \bR{stat_smooth(method = "lm") +}}/Statistic/{\textsb{what} is computed first},
+      BaseGray/{\ \ \bR{scale_color_manual(values = species_colours) +}}/Scale/{values to colors, axes, legend},
+      BaseGray/{\ \ \bR{coord_cartesian() +}}/Coordinates/{axes and grid},
+      BaseGray/{\ \ \bR{facet_wrap(~ island) +}}/Facets/{one panel per island},
+      Warn/{\ \ \bR{theme_minimal()}}/Theme/{fonts and background, outside the grammar}%
+   } {
+      \node[Code,visible on=<\i->] (code-\i) at (0,{-\i*6.4mm}) {\code};
+      \node[Part,visible on=<\i->] (part-\i) at (78mm,{-\i*6.4mm}) {\textcolor{\c}{\sbseries\name}: \what};
+      \draw[-Kite,thin,\c!70,visible on=<\i->] ([xshift=1mm]code-\i.east) -- ([xshift=-1mm]part-\i.west);
+   }
+   \foreach \from/\to/\what/\c/\step in {1/4/layer/PartTint/4,5/7/{scales and\\coordinates}/BaseGray/7} {
+      \draw[decorate,decoration={brace,amplitude=3pt,mirror},\c,thick,visible on=<\step->]
+         (-2mm,{-\from*6.4mm+3mm}) -- (-2mm,{-\to*6.4mm-3mm})
+         node[midway,left=2mm,font=\scriptsize,align=right,text=\c] {\what};
+   }
+\end{tikzpicture}
+\Tutorial{https://ggplot2-book.org}{the ggplot2 book}
+\Stage{Visualize}
+\NoteRef{r/the-grammar-of-graphics}
+\end{frame}
+
+\begin{frame}{Every Chart Type Is a Geometry}
+\centering
+\begin{tikzpicture}[
+   Kind/.style={Pill=plotblue!80,font=\scriptsize\sbseries,minimum width=23mm,text height=1.6ex,text depth=.4ex},
+   Chart/.style={font=\fontsize{5}{6}\selectfont\ttfamily,anchor=west,inner sep=1pt,text height=1.6ex,text depth=.4ex},
+   level distance=13mm,
+   level 1/.style={sibling distance=29mm,
+      edge from parent path={([yshift=-3mm]\tikzparentnode.south) -| (\tikzchildnode.north)},
+      edge from parent/.style={draw,SoftGray,thick,rounded corners=3pt}},
+   level 2/.style={
+      grow via three points={one child at (-6.5mm,-8mm) and two children at (-6.5mm,-8mm) and (-6.5mm,-13.5mm)},
+      edge from parent path={([xshift=-9mm]\tikzparentnode.south) |- (\tikzchildnode.west)},
+      edge from parent/.style={draw,SoftGray,rounded corners=3pt},
+   },
+]
+   % the tree of \enquote{Choosing a Chart}, with the geom of each chart
+   \node[Pill=BaseGray,font=\small\sbseries,inner xsep=8pt,inner ysep=4pt] (data) {\texttt{ggplot(d, aes(...)) +}~\dots}
+      child[visible on=<1->] {node[Kind] {\faBarChart~One numeric}
+         child {node[Chart] {\ChartIcon{\IconHist}~geom\_histogram()}} child {node[Chart] {\ChartIcon{\IconDens}~geom\_density()}} child {node[Chart] {\ChartIcon{\IconBox}~geom\_boxplot()}}}
+      child[visible on=<2->] {node[Kind] {\faCrosshairs~Two numeric}
+         child {node[Chart] {\ChartIcon{\IconScat}~geom\_point()}} child {node[Chart] {\ChartIcon{\IconTwod}~geom\_density\_2d()}} child {node[Chart] {\ChartIcon{\IconHex}~geom\_hex()}}}
+      child[visible on=<3->,edge from parent path={(\tikzparentnode.south) -- (\tikzchildnode.north)}] {node[Kind] {\faTags~Categorical}
+         child {node[Chart] {\ChartIcon{\IconBar}~geom\_bar()}} child {node[Chart] {\ChartIcon{\IconLol}~geom\_segment()}} child {node[Chart] {\ChartIcon{\IconBar}~geom\_col()}}}
+      child[visible on=<4->] {node[Kind] {\faSliders~Num \& Cat}
+         child {node[Chart] {\ChartIcon{\IconGbox}~geom\_boxplot()}} child {node[Chart] {\ChartIcon{\IconVio}~geom\_violin()}} child {node[Chart] {\ChartIcon{\IconScat}~geom\_jitter()}}}
+      child[visible on=<5->] {node[Kind] {\faLineChart~Time series}
+         child {node[Chart] {\ChartIcon{\IconLine}~geom\_line()}} child {node[Chart] {\ChartIcon{\IconArea}~geom\_area()}} child {node[Chart] {\ChartIcon{\IconSmall}~facet\_wrap()}}};
+   \node[below=38mm,font=\small,gray,visible on=<6->] at(data.south) {Swap the geometry (\texttt{geom\_*()}), keep the data and the mapping.};
+\end{tikzpicture}
+\Tutorial{https://r-graph-gallery.com/}{R graph gallery: code for every chart}
+\Stage{Visualize}
+\NoteRef{r/every-chart-is-a-geom}
+\end{frame}
+
+\begin{frame}[label=plot-grammar]{All Components in One Plot}
+\centering
+\begin{tikzpicture}
+   \node[Plot] (plot) at (0,0) {\includegraphics[width=9.5cm]{grammar}};
+   \node[right=5mm,anchor=west,text width=3.2cm,font=\small,align=left] at(plot.east) {%
+      Each component is replaceable on its own: swap \bR{geom_point()} for \bR{geom_density_2d()} and the rest stays.};
+\end{tikzpicture}
+\PlotCode{grammar}
+\Stage{Visualize}
+\NoteRef{r/plot-grammar}
+\end{frame}
+
+\begin{frame}[fragile,label=plot-ggplot-steps]{Building a Plot}
+\ifdefined\LectureAnimated\def\StepWidth{5cm}\def\StepShift{0mm}\else\def\StepWidth{6cm}\def\StepShift{10mm}\fi
+\begin{tikzpicture}[overlay,remember picture]
+   \node[left=4mm,yshift=\StepShift] (plot) at(current page.east) {%
+      \foreach \i in {1,...,7} {\only<\i|handout:0>{\includegraphics[width=\StepWidth]{gg-step-\i}}}%
+      \only<8->{\includegraphics[width=\StepWidth]{gg-step-8}}%
+   };
+   \node[below=0mm,Note,visible on=<3->,anchor=north east] at(plot.south east) {gray band: \qty{95}{\percent} CI of the mean};
+   \ifdefined\LectureAnimated\else
+   \node[above right=12mm and 10mm,anchor=south west,inner sep=0pt] (strip) at(current page.south west) {%
+      \foreach \i in {1,...,8} {%
+         \tikz\node[inner sep=1pt,draw=SoftGray,thick,rounded corners=1pt]
+            {\includegraphics[width=1.45cm]{gg-step-\i}};\hspace{1.5mm}}};
+   \fi
+\end{tikzpicture}
+\begin{minipage}{.58\textwidth}
+\scriptsize
+\AnimateCode{onslide={o1:{2},/3: a point per row,/4: linear fit,/5: own colors,o6:{7},/8: lighter theme,/9: title,o10:{11},0}}
+\begin{minted}[escapeinside={!*}{*!},mrprefix={library(ggplot2); colours <- c(Adelie = 'firebrick', Chinstrap = 'orchid', Gentoo = 'midnightblue'); ends <- aggregate(cbind(flipper_len, body_mass) ~ species, penguins, max)}]{R}
+ggplot(penguins, aes(x = flipper_len,
+  y = body_mass, color = species)) +
+  geom_point(alpha = .7) +
+  geom_smooth(method = "lm") +
+  scale_color_manual(values = !*\textcolor{NotShownGray}{colours}\NotShownAfter{colours}{colours}*!) +
+  labs(x = "Flipper length (mm)",
+    y = "Body mass (g)", color = NULL) +
+  theme_minimal(base_family = "Fira Sans") +
+  ggtitle("Heavier penguins have longer flippers") +
+  geom_text(aes(label = species), data = !*\textcolor{NotShownGray}{ends}\NotShownAfter{ends}{ends}*!,
+    hjust = 0) + theme(legend.position = "none")
+\end{minted}
+\endAnimateCode
+\end{minipage}
+\VarNote<4->[north east]{ns-colours}{(6mm,25mm)}{a named vector of colors}
+\ifdefined\LectureAnimated\VarNote<8->[south]{ns-ends}{(16mm,-9mm)}{label positions}\else\VarNote<8->[east]{ns-ends}{(15mm,-1.5mm)}{label positions}\fi
+\PlotCode{ggplot-steps}
+\Stage{Visualize}
+\NoteRef{r/plot-ggplot-steps}
+\end{frame}
+
+\begin{frame}[label=plot-axis-zero,optional]{Does the Axis Need Zero?}
+\centering
+\begin{tikzpicture}
+   \node[Plot] (zero) at (0,0) {\includegraphics[width=4cm]{axis-zero-1}};
+   \node[Plot,right=8mm of zero,visible on=<2->] (fit) {\includegraphics[width=4cm]{axis-zero-2}};
+   \node[below=1mm,Note,font=\small] at(zero.south) {from zero: squeezed};
+   \node[below=1mm,Note,font=\small,visible on=<2->] at(fit.south) {fitted: the relation is visible};
+\end{tikzpicture}
+\PlotCode{axis-zero}
+\KeyMessage<3->{Bars show length, so their axis starts at zero.\\ Points and lines show position: zoom in, but label the axis.}
+\Stage{Visualize}
+\NoteRef{r/plot-axis-zero}
+\end{frame}
+
+\begin{frame}[label=plot-dynamite,optional]{Show the Data, Not the Dynamite}
+\centering
+\begin{tikzpicture}
+   \node[Plot] (bar) at (0,0) {\includegraphics[width=4.3cm]{dynamite-1}};
+   \node[Plot,right=7mm of bar,visible on=<2->] (points) {\includegraphics[width=4.3cm]{dynamite-2}};
+   \node[below=1mm,Note,font=\small] at(bar.south) {mean \(\pm\) standard error};
+   \node[below=1mm,Note,font=\small,visible on=<2->] at(points.south) {every penguin, mean and \qty{95}{\percent} CI};
+   \node[right=5mm,anchor=north west,text width=3.4cm,font=\small,align=left,visible on=<3->] at(points.north east) {%
+      A bar hides the spread and the sample size.\supercite{weissgerber2015beyond} A standard error bar is about half as wide as a \qty{95}{\percent}~interval.};
+\end{tikzpicture}
+\PlotCode{dynamite}
+\Stage{Visualize,Communicate}
+\NoteRef{r/plot-dynamite}
+\end{frame}
+
+\StartTiming{3.talk2}
+\begin{frame}{Talk Groups: What Is Wrong with This Chart?}
+\centering
+\begin{tikzpicture}[x=1mm,y=1mm]
+   % a deliberately bad chart: the axis starts at 90, so 91 and 96 look like 1 and 6
+   \node[font=\sbseries\large,anchor=south] at (25,52) {Our tool: 6\(\times\) better!};
+   \draw[gray] (0,0) -- (0,48);
+   \foreach \v [count=\i from 0] in {90,...,97} {\draw[gray] (0,{\i*6}) -- ++(-1.2,0) node[left,font=\scriptsize] {\v};}
+   \node[rotate=90,font=\scriptsize,gray] at (-10,24) {Score};
+   \fill[red!75!black] (8,0) rectangle ++(14,6);
+   \fill[green!60!black] (28,0) rectangle ++(14,36);
+   \node[below,font=\small] at (15,0) {Baseline};
+   \node[below,font=\small] at (35,0) {Ours};
+   \node[Card,draw=PartTint,anchor=west,text width=58mm,align=left,font=\small,inner sep=8pt] (task) at (60,28) {%
+      {\Large\textcolor{PartTint}{\faComments}}\\[2mm]
+      Every number in this chart is correct.\\ What is wrong with it, and how would you draw it?};
+   \node[below=4mm of task.south west,anchor=north west] {\ActivityPill{\faClockO}{\qty{5}{\minute}\Dot groups of 3 to 4}};
+\end{tikzpicture}
+\Stage{Visualize}
+\NoteRef{r/talk-groups-what-is-wrong-with-this-chart}
+\end{frame}
+\StartTiming{3.talk2a}
+
+\begin{frame}[solution]{The Same Chart, Drawn Honestly}
+\centering
+% the numbers of the talk group chart, made up: 20 scores per tool out of 100, means 91 and 96, 95 % t intervals
+\def\BaseScores{84,85,86,87,88,89,89,90,90,91,91,92,92,93,93,94,95,96,97,98}
+\def\OursScores{93,94,95,95,96,96,97,97,97,98,98,98,99,99,99,100,100,100,100}% and one at 69, below the zoomed axis
+\begin{tikzpicture}[x=1mm,y=1mm,Ci/.style={thick,line cap=round}]
+   \node[font=\sbseries,anchor=south] at (40,53) {Ours scores 5 points higher};
+   % left: the whole scale, from zero
+   \node[font=\scriptsize\sbseries,anchor=south] at (13,48) {from zero};
+   \draw[gray] (0,0) -- (0,46);
+   \foreach \v in {0,25,50,75,100} {\draw[gray] (0,{\v*.46}) -- ++(-1.2,0) node[left,font=\scriptsize] {\v};}
+   \node[rotate=90,font=\scriptsize,gray] at (-10,23) {Score (points)};
+   \fill[BaseGray!70] (3,0) rectangle ++(9,{91*.46});
+   \fill[plotblue] (15,0) rectangle ++(9,{96*.46});
+   \node[below,font=\small] at (7.5,0) {Baseline};
+   \node[below,font=\small] at (19.5,0) {Ours};
+   % right: zoomed to 80 to 100, every developer, the cut marked at the axis
+   \begin{scope}[xshift=40mm,visible on=<2->]
+      \node[font=\scriptsize\sbseries,anchor=south] at (15,48) {zoomed: not from zero};
+      \draw[gray] (0,0) -- (0,46);
+      \draw[gray,fill=white] (-1.5,1.2) -- (1.5,2.2) (-1.5,2.4) -- (1.5,3.4);
+      \foreach \v in {80,85,...,100} {\draw[gray] (0,{(\v-78)*2.1}) -- ++(-1.2,0) node[left,font=\scriptsize] {\v};}
+      \foreach \v [count=\i] in \BaseScores {\fill[BaseGray] ({8+mod(\i,5)*.9-1.8},{(\v-78)*2.1}) circle[radius=.55mm];}
+      \foreach \v [count=\i] in \OursScores {\fill[plotblue!80] ({22+mod(\i,5)*.9-1.8},{(\v-78)*2.1}) circle[radius=.55mm];}
+      \foreach \x/\m/\h in {8/91/1.8,22/96/3.0} {
+         \draw[Ci] (\x+3.5,{(\m-\h-78)*2.1}) -- ++(0,{2*\h*2.1});
+         \fill (\x+3.5,{(\m-78)*2.1}) circle[radius=.8mm];}
+      \node[font=\tiny,Warn,anchor=west] at (25,4.2) {\(\downarrow\) 1 more at 69};
+      \node[below,font=\small] at (8,-2.6) {Baseline};
+      \node[below,font=\small] at (22,-2.6) {Ours};
+   \end{scope}
+   \node[font=\tiny,gray,anchor=north west] at (0,-8) {\(n = 20\) per tool, dots: each developer, black: mean and \qty{95}{\percent} confidence interval};
+   \node[Card,draw=GoodGreen,anchor=west,text width=44mm,align=left,font=\small,inner sep=6pt,visible on=<3->] at (84,24) {%
+      \textcolor{GoodGreen}{\faCheck~\textsb{What changed}}\\[1mm]\footnotesize
+      One axis starts at zero, so the bars keep their length.\\[.6mm]
+      The zoomed axis says so, shows every developer, and marks the one it leaves out.\\[.6mm]
+      The axis names the measure and its unit.\\[.6mm]
+      The title gives the difference, not a ratio.\\[.6mm]
+      Gray against blue also works for color-blind readers.};
+\end{tikzpicture}
+\Stage{Visualize}
+\NoteRef{r/the-same-chart-drawn-honestly}
+\end{frame}
+
+% \CheatTile{pictogram on 0..10 x 0..10}{trick}{the check}: one way to mislead, drawn small
+\newsavebox\CheatPic
+\newcommand\CheatTile[3]{%
+   \sbox\CheatPic{\tikz[x=1.4mm,y=.62mm,line width=.5pt,line cap=round]{\path (0,0) rectangle (10,10);#1}}%
+   \begin{tikzpicture}[baseline=(tile.north)]
+      \node[Card,draw=PartTint!45,anchor=north,text width=31mm,minimum height=17mm,align=center,font=\scriptsize,inner sep=3pt] (tile) {%
+         \usebox\CheatPic\\[.5mm]{\small\textsb{#2}}\\\textcolor{darkgray}{#3}};
+   \end{tikzpicture}}
+\begin{frame}[solution]{How to Cheat with Statistics: What \textcolor{Warn}{Not} to Do}
+\centering
+\setlength\tabcolsep{1mm}
+\begin{tabular}{cccc}
+   \CheatTile{\draw[gray] (0,0) -- (0,10);\draw[gray,decorate,decoration={zigzag,amplitude=.4mm,segment length=1.2mm}] (-.8,1) -- (.8,1);\fill[plotblue] (2,0) rectangle (4.5,2.5);\fill[plotblue] (6,0) rectangle (8.5,9);}
+      {Cut the axis}{bars start at zero} &
+   \CheatTile{\draw[gray] (0,2.5) rectangle (4,7.5);\draw[plotblue,thick] (0,3) -- (1.33,4.5) -- (2.67,5.5) -- (4,7.5);\draw[-Kite,gray] (4.6,5) -- (6,5);\draw[gray] (6.6,0) rectangle (9,10);\draw[plotblue,thick] (6.6,1) -- (7.4,4) -- (8.2,6) -- (9,10);}
+      {Stretch the ratio}{same data, other slope} &
+   \CheatTile{\fill[SoftGray!60] (5,0) rectangle (10,10);\draw[plotblue,thick] (0,6) -- (2,8) -- (4,2) -- (5,1.5) -- (7,5) -- (10,9);}
+      {Pick the range}{show the whole series} &
+   \CheatTile{\draw[plotblue] (0,0) -- (0,10);\draw[Warn] (10,0) -- (10,10);\draw[plotblue,thick] (0,2) -- (10,7);\draw[Warn,thick] (0,8) -- (10,3);}
+      {Two \(y\) axes}{they cross where you like} \\[1mm]
+   \CheatTile{\fill[plotblue] (2.5,5) circle[radius=1.4mm] node[font=\tiny,white] {1};\fill[plotblue] (7,5) circle[radius=2.8mm] node[font=\tiny,white] {2};}
+      {Area for a number}{2\(\times\) the radius, 4\(\times\) the area} &
+   \CheatTile{\node[font=\Large\sbseries,plotblue] at (5,6.5) {\(\times\)2};\node[font=\tiny,gray] at (5,1.5) {1 \(\to\) 2 in a million};}
+      {Only relative change}{give the absolute numbers} &
+   \CheatTile{\draw[gray,dashed] (0,2) -- (10,2);\foreach \x/\y in {.5/6,1.5/8,2.5/4,3.5/9,4.5/5,5.5/7,6.5/3,7.5/8,8.5/6,9.5/5}{\fill[gray] (\x,\y) circle[radius=.5mm];}\fill[Warn] (6.5,1) circle[radius=.7mm];}
+      {Test many outcomes}{report all, use Holm} &
+   \CheatTile{\draw[gray,dashed] (0,3) -- (10,3);\draw[plotblue,thick] (0,8) -- (1.5,6) -- (3,7.5) -- (4.5,4) -- (6,5) -- (7,2.2);\fill[Warn] (7,2.2) circle[radius=.7mm];\node[font=\tiny,Warn,right] at (7.3,2.2) {stop};}
+      {Peek and stop}{fix \(n\) in advance} \\[1mm]
+   \CheatTile{\foreach \x/\y in {1/2,2/3,3/3.5,4/5,5/5.5,6/6,7/7.5}{\fill[plotblue] (\x,\y) circle[radius=.56mm];}\foreach \x/\y in {8.5/2,2/8.5}{\draw[Warn,thick] (\x-.6,\y-.6) -- (\x+.6,\y+.6) (\x-.6,\y+.6) -- (\x+.6,\y-.6);}}
+      {Drop the outliers}{fix the rule first} &
+   \CheatTile{\foreach \x/\y in {1/4,2/7,3/2,4/6,5/3,6/8,7/5,8/2,9/7,2/4,8/8.5}{\fill[gray] (\x,\y) circle[radius=.5mm];}\foreach \x/\y in {6/8,8/8.5,9/7}{\fill[plotblue] (\x,\y) circle[radius=.56mm];}\draw[Warn,thick] (7.7,7.9) ellipse[x radius=2.4,y radius=2];}
+      {Pick a subgroup}{plan subgroups in advance} &
+   \CheatTile{\draw[gray,thick] plot[smooth,domain=0:10,samples=30] (\x,{3+7*exp(-(\x-4.8)^2/3)});\draw[plotblue,thick] plot[smooth,domain=0:10,samples=30] (\x,{3+7*exp(-(\x-5.2)^2/3)});\node[font=\tiny,text=darkgray] at (5,.6) {\(n = 10^6\), \(p < 0.001\)};}
+      {Huge \(n\)}{report the effect size} &
+   \CheatTile{\node[font=\tiny,draw=plotblue,rounded corners=1pt,inner sep=1.5pt] (a) at (1.8,2) {ice};\node[font=\tiny,draw=plotblue,rounded corners=1pt,inner sep=1.5pt] (b) at (8.2,2) {sunburn};\node[font=\tiny,draw=Warn,dashed,rounded corners=1pt,inner sep=1.5pt] (c) at (5,8.5) {summer};\draw[-Kite,plotblue] (a) -- (b);\draw[-Kite,Warn,dashed] (c) -- (a);\draw[-Kite,Warn,dashed] (c) -- (b);}
+      {Correlation as cause}{look for the third variable}
+\end{tabular}
+\Stage{Visualize}
+\NoteRef{r/how-to-cheat-with-statistics}
+\end{frame}
+\StartTiming{3.c}
+
+\begin{frame}[fragile]{Statistical Models Made Easy}
+\hypertarget<1>{later-model}{}%
+\begin{minipage}{.66\textwidth}
+\footnotesize
+\begin{rsession}
+pooled <- lm(bill_dep ~ bill_len, penguins)
+adjusted <- lm(bill_dep ~ bill_len + species, penguins)
+|dim|round(|dim|coef(pooled)[["bill_len"]]|dim|, 2)|dim|!*\CodeMark{pool}*!
+|dim|round(|dim|coef(adjusted)[["bill_len"]]|dim|, 2)|dim|!*\CodeMark{within}*!
+\end{rsession}
+\end{minipage}
+\CodeNote<3->{pool}{all penguins: longer bills are shallower}
+\CodeNote<4->{within}{within each species: longer bills are deeper}
+\KeyMessage<5->{Simpson's paradox in numbers. One common slope within species,\\ \bR{bill_len * species} gives each species its own.}
+\ShowPerson{galton}
+\Stage[14mm]{Model}
+\NoteRef{r/a-model-is-one-line}
+\end{frame}
+
+\begin{frame}[label=plot-residuals,optional]{Checking a Model}
+\centering
+\begin{tikzpicture}
+   \node[Plot] (fitted) at (0,0) {\includegraphics[width=4.2cm]{residuals-1}};
+   \node[Plot,right=10mm of fitted,visible on=<2->] (qq) {\includegraphics[width=4.2cm]{residuals-2}};
+   \node[below=1mm,Note,font=\small] at(fitted.south) {residuals group by species};
+   \node[below=1mm,Note,font=\small,visible on=<2->] at(qq.south) {per species: Chinstrap lies below the line};
+   \node[above=2mm,font=\small] at($(fitted.north)!.5!(qq.north)$) {Residuals of \bR{lm(body_mass ~ flipper_len)}};
+\end{tikzpicture}
+\PlotCode{residuals}
+\KeyMessage<3->{A pattern in the residuals can show what your model misses.}
+\ShowPerson{box}
+\Stage[14mm]{Visualize,Model}
+\NoteRef{r/plot-residuals}
+\end{frame}
+
+\begin{frame}[fragile,optional,label=plot-bootstrap]{The Bootstrap}
+\begin{columns}[c,onlytextwidth]
+   \begin{column}{.56\textwidth}
+\footnotesize
+\AnimateCode{onslide={o1:{2,3},/4: our one sample,o5:{6},/7: the middle \qty{95}{\percent},0}}
+\begin{minted}{R}
+set.seed(3)
+gentoo <- subset(penguins,
+  species == "Gentoo" & sex == "male")
+x <- gentoo$body_mass
+means <- replicate(1e4,
+  mean(sample(x, replace = TRUE)))
+quantile(means, c(.025, .975))
+\end{minted}
+\endAnimateCode
+      \small
+      \begin{itemize}
+         \item<5-> Resample your data with replacement, recompute the statistic, repeat
+         \item<6-> The spread of the results estimates the uncertainty of many statistics, but not in small samples or for extremes\supercite{efron1993bootstrap}
+      \end{itemize}
+   \end{column}
+   \begin{column}{.42\textwidth}
+      \begin{tikzpicture}
+         \node[Plot,visible on=<4->] {\includegraphics[width=5.2cm]{bootstrap}};
+      \end{tikzpicture}
+   \end{column}
+\end{columns}
+\PlotCode{bootstrap}
+\ShowPerson{efron}
+\Stage[14mm]{Model}
+\NoteRef{r/plot-bootstrap}
+\end{frame}
+
+\StartTiming{3.code2}
+\begin{frame}{Live Coding: Are Chinstrap Females Heavier?}
+\Mission{Lecture 1: male Adelie were \qty{104}{\gram} heavier than male Chinstrap, \(p = 0.16\). What about the females?}
+   {\item Plot every penguin, with the mean and its \qty{95}{\percent} interval
+    \item Welch \(t\)-test: the difference, its interval, and \(p\)}
+   {\bR{geom_jitter()}, \bR{stat_summary()}, \bR{t.test()}}
+   {10}{in pairs}{templates/chinstrap-females.R}{ex-r-chinstrap}
+\Stage{Model}
+\NoteRef{r/live-coding-are-chinstrap-females-heavier}
+\end{frame}
+\StartTiming{3.code2a}
+
+\begin{frame}[fragile,solution]{Chinstrap Females: A Possible Solution}
+\begin{columns}[t,onlytextwidth]
+   \begin{column}{.5\textwidth}
+\scriptsize
+\begin{rsession}
+f <- droplevels(subset(penguins,
+  sex == "female" & species != "Gentoo"))
+f$species <- relevel(f$species, "Chinstrap")
+table(f$species)
+res <- t.test(body_mass ~ species, f)
+round(tapply(f$body_mass, f$species, mean))
+round(res$conf.int[1:2])
+round(res$p.value, 3)
+\end{rsession}
+   \end{column}
+   \begin{column}{.45\textwidth}
+\scriptsize
+\begin{minted}[mrplayground=false]{R}
+ggplot(f, aes(species, body_mass)) +
+  geom_jitter(width = 0.2) +
+  stat_summary(fun.data = mean_se,
+    fun.args = list(mult = 1.96))
+\end{minted}
+\small
+\begin{uncoverenv}<2->
+\textsb{And in one sentence?}\\
+Chinstrap females were \qty{158}{\gram} heavier (\qty{95}{\percent} CI \qtyrange{42}{275}{\gram}, Welch \(t\)-test, \(p = 0.008\), \(n = 34\) and \(73\)).
+\end{uncoverenv}
+\par\medskip
+\begin{uncoverenv}<3->
+\footnotesize\color{darkgray}
+For the males it was the other way round: Adelie were heavier. So report each group on its own: one test over all penguins mixes both effects and finds almost nothing.
+\end{uncoverenv}
+\end{column}
+\end{columns}
+\Stage{Model}
+\NoteRef{r/chinstrap-females-our-answer}
+\end{frame}
+\StartTiming{3.d}
+
+\begin{frame}[fragile]{Project Setup}
+\begin{minipage}{.6\textwidth}
+\footnotesize
+\textsb{\small\texttt{\textasciitilde/.Rprofile}}
+\begin{minted}[mrplayground=false]{R}
+options(warnPartialMatchDollar = TRUE,!*\CodeMark{opt}*!
+  |dim|warnPartialMatchArgs = TRUE, warn = 1)|dim|
+\end{minted}
+\begin{uncoverenv}<2->\textsb{\small Once per project}
+\begin{minted}[mrplayground=false]{R}
+renv::init()!*\CodeMark{init}*!
+renv::snapshot()!*\CodeMark{snap}*!
+renv::restore()!*\CodeMark{rest}*!
+\end{minted}\end{uncoverenv}
+\begin{uncoverenv}<3->\textsb{\small In every analysis}
+\begin{minted}[mrplayground=false]{R}
+set.seed(42)!*\CodeMark{seed}*!
+raw <- read.csv("data/raw.csv")!*\CodeMark{path}*!
+sessionInfo()!*\CodeMark{info}*!
+\end{minted}\end{uncoverenv}
+\end{minipage}
+\CodeNote<1->{opt}{warn when R completes \bR{df$val} to \texttt{df\$value}}
+\CodeNote<2->{init}{one library per project\supercite{ushey2026renv}}
+\CodeNote<2->{snap}{versions pinned in \texttt{renv.lock}}
+\CodeNote<2->{rest}{rebuilt on another machine}
+\CodeNote<3->{seed}{before anything random}
+\CodeNote<3->{path}{relative paths, no \bR{setwd()}}
+\CodeNote<3->{info}{at the end of every report}
+\NoteRef{r/project-setup}
+\end{frame}
+
+\begin{frame}[fragile]{Getting Help}
+\begin{minipage}{.6\textwidth}
+\small
+\begin{minted}[mrplayground=false]{R}
+?t.test!*\CodeMark{q}*!
+??"linear model"!*\CodeMark{qq}*!
+example(t.test)!*\CodeMark{ex}*!
+vignette("dplyr")!*\CodeMark{vig}*!
+help(package = "ggplot2")!*\CodeMark{pkg}*!
+reprex::reprex()!*\CodeMark{rep}*!
+\end{minted}
+\end{minipage}
+\CodeNote<1->{q}{the help page of a function}
+\CodeNote<2->{qq}{search all installed help pages}
+\CodeNote<3->{ex}{run the examples of a help page}
+\CodeNote<4->{vig}{a longer tutorial inside a package}
+\CodeNote<5->{pkg}{every help page of a package}
+\CodeNote<6->{rep}{still stuck? code others can run}
+\begin{tikzpicture}[overlay,remember picture]
+   \node[anchor=south west,font=\footnotesize,text width=120mm,align=left,visible on=<7->] at([xshift=12mm,yshift=13mm]current page.south west) {%
+      \faSearch~Which package exports a function, and since which version? Search every CRAN export in the
+      \href{https://flowr-analysis.github.io/flowr/wiki/sigdb/}{\textcolor{PartTint}{\textsb{flowR signature database}}}.};
+\end{tikzpicture}
+\NoteRef{r/getting-help}
+\end{frame}
+
+\begin{frame}{Further Reading}
+\begin{tikzpicture}[Book/.style={inner sep=0pt,draw=SoftGray,drop shadow={opacity=.25,shadow xshift=.6mm,shadow yshift=-.6mm}}]
+   \foreach[count=\i] \file/\key/\title/\what/\url in {
+      r4ds.jpg/wickham2023r4ds/R for Data Science/{from import to report}/{https://r4ds.hadley.nz},
+      advanced-r.png/wickham2019advr/Advanced R/{how R works inside}/{https://adv-r.hadley.nz},
+      ggplot2-book.jpg/wickham2016ggplot2book/ggplot2/{the grammar in depth}/{https://ggplot2-book.org},
+      dataviz.png/wilke2019fundamentals/Data Visualization/{which chart, and why}/{https://clauswilke.com/dataviz}%
+   } {
+      \node[Book,visible on=<\i->,href node=\url] (b\i) at ({(\i-1)*35mm},0) {\includegraphics[height=30mm,width=19.7mm,keepaspectratio=false]{books/\file}};
+      \node[circle,fill=PartTint,text=white,font=\scriptsize,inner sep=2pt,visible on=<\i->,href node=\url] at(b\i.north east) {\faExternalLink};
+      \node[below=3mm,font=\scriptsize,text width=29mm,align=center,visible on=<\i->] at(b\i.south) {\textsb{\title}\supercite{\key}\\\textcolor{gray}{\what}};
+   }
+\end{tikzpicture}
+\KeyMessage<5->{All four books are free to read online: click a cover.}
+\NoteRef{r/further-reading}
+\end{frame}
+
+\begin{frame}[fragile]{Interactive Plots}
+\begin{columns}[c,onlytextwidth]
+   \begin{column}{.52\textwidth}
+\scriptsize
+\AnimateCode{onslide={o1:{2,3},/4: hover,o5:{6,7},0}}
+\begin{minted}[mrplayground=false]{R}
+library(ggplot2)
+p <- ggplot(penguins, aes(flipper_len,
+  body_mass, color = species))
+plotly::ggplotly(p + geom_point())
+library(ggiraph)
+girafe(ggobj = p + geom_point_interactive(
+  aes(tooltip = island)))
+\end{minted}
+\endAnimateCode
+   \end{column}
+   \begin{column}{.44\textwidth}
+\begin{tikzpicture}
+   \node[Plot] (plot) at (0,0) {\includegraphics[width=5.4cm]{gg-step-6}};
+   \onslide<2->{
+      \coordinate (point) at ($(plot.center)+(9mm,4mm)$);
+      \draw[fill=white,draw=BaseGray,Soft,rotate around={28:(point)}] (point) -- ++(4pt,-9.5pt) -- ++(-4pt,3pt) -- ++(-4pt,-3pt) -- cycle;
+      \node[Card,anchor=south east,font=\tiny,inner sep=3pt] at ($(point)+(-1mm,1mm)$) {\texttt{flipper\_len: 217}\\\texttt{body\_mass: 5200}\\\texttt{species: Gentoo}};
+   }
+\end{tikzpicture}
+      \small
+      \onslide<5->{Both produce HTML widgets: they work in the browser, in Quarto, and in Shiny.\supercite{sievert2020plotly,gohel2026ggiraph}}
+   \end{column}
+\end{columns}
+\Stage{Visualize,Communicate}
+\NoteRef{r/interactive-plots}
+\end{frame}
+
+\IfFileExists{examples/app-url.tex}{\input{examples/app-url.tex}}{\def\ShinyliveUrl{https://shinylive.io/r/examples/}}
+\begin{frame}[fragile,optional]{Shiny}
+\begin{columns}[c,onlytextwidth]
+   \begin{column}{.6\textwidth}
+\scriptsize
+\AnimateCode{onslide={o2:{3,...,6},/8: a reactive value,/10: re-runs,o11:{12,13},15,0}}
+\begin{minted}{R}
+library(shiny); library(ggplot2)
+ui <- fluidPage(
+  selectInput("species", "Species",
+    levels(penguins$species)),
+  sliderInput("alpha", "Alpha", 0.1, 1, 0.7),
+  textOutput("n"), plotOutput("scatter"))
+server <- function(input, output) {
+  chosen <- reactive(
+    subset(penguins, species == input$species))
+  output$n <- renderText(nrow(chosen()))
+  output$scatter <- renderPlot(
+    ggplot(chosen(), aes(flipper_len, body_mass)) +
+      geom_point(alpha = input$alpha))
+}
+shinyApp(ui, server)
+\end{minted}
+\endAnimateCode
+   \end{column}
+   \begin{column}{.38\textwidth}
+\begin{tikzpicture}[
+   Input/.style={Pill=PartTint,font=\scriptsize\ttfamily},
+   Reactive/.style={Pill=plotblue!60,font=\scriptsize\ttfamily},
+   Output/.style={Pill=BaseGray,font=\scriptsize\ttfamily},
+   Dep/.style={Link,gray,thick},
+]
+   \node[Input] (species) at (0,0) {input\$species};
+   \node[Input,right=8mm of species] (alpha) {input\$alpha};
+   \node[Reactive,below=8mm of species] (chosen) {chosen()};
+   \node[Output,below=8mm of chosen] (table) {output\$n};
+   \node[Output] (scatter) at(alpha |- table) {output\$scatter};
+   \draw[Dep] (species) -- (chosen);
+   \draw[Dep] (chosen) -- (table);
+   \draw[Dep] (chosen) -- (scatter);
+   \draw[Dep] (alpha) -- (scatter);
+   \onslide<5->{
+      \node[Glow=PartTint,fit=(alpha),inner sep=1pt,fill=none] {};
+      \node[Glow=BaseGray,fit=(scatter),inner sep=1pt,fill=none] {};
+      \node[below=6mm of table.south west,anchor=north west,font=\scriptsize,text width=4.6cm,align=left] {Moving the slider re-draws the scatter plot only: Shiny tracks which outputs depend on which inputs.\supercite{wickham2021shiny}};
+   }
+\end{tikzpicture}
+   \end{column}
+\end{columns}
+\Tutorial{https://shiny.posit.co/r/getstarted}{Shiny tutorial}
+\NoteRef{r/shiny}
+\end{frame}
+
+\DefinePingu[.45]\PinguBrowser{eyes shiny,laptop left=plotblue}
+\begin{frame}[optional]{Shinylive}
+\begin{tikzpicture}
+   \node[circle,fill=PartTint,minimum size=32mm,text=white,font=\Huge,href node={\ShinyliveUrl}] (qr) at (0,0) {\faPlay};
+   \node[below=2mm,font=\small\sbseries,PartTint] at(qr.south) {\link{\ShinyliveUrl}{open the app}};
+   \node[right=10mm of qr,anchor=west,text width=6.5cm,align=left,font=\small] (text) {%
+      \textsb{\large Shinylive} runs the same app on webR, a WebAssembly build of R.\supercite{posit2026shinylive,rwasm2026webr}};
+   \node[below=3mm of text.south west,anchor=north west,text width=6.5cm,align=left,font=\small,visible on=<2->] (server) {%
+      No server needed: the link itself contains the code of the app.};
+   \onslide<2->{\node[above right=2mm and -6mm,href node={\ShinyliveUrl}] at(qr.north east) {\usebox\PinguBrowser};}
+\end{tikzpicture}
+\NoteRef{r/shinylive}
+\end{frame}
+
+\NextNoteRef{r/takeaways-1}
+\Takeaways{
+   \Learning{th}{Everything is a vector}{\texttt{x * 2} works on the whole vector: no loops, no index arithmetic.}
+   \Learning{code}{Functions are values}{\texttt{sapply}, \texttt{Filter}, \texttt{Reduce}, and closures replace most loops.}
+   \Learning{table}{Tidy first, then dplyr and ggplot2}{One row per observation, columns by name, no \texttt{\$}.}
+   \Learning{exclamation-triangle}{Watch for silent pitfalls}{NA spreads, short vectors recycle, types coerce without a warning.}
+}

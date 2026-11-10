@@ -1,0 +1,42 @@
+\csdef{tool@lintr}{https://lintr.r-lib.org}
+\csdef{tool@styler}{https://styler.r-lib.org}
+\csdef{tool@testthat}{https://testthat.r-lib.org}
+\csdef{tool@flowr}{https://github.com/flowr-analysis/flowr}
+\csdef{tool@renv}{https://rstudio.github.io/renv}
+\csdef{tool@targets}{https://docs.ropensci.org/targets}
+\begin{frame}{Tools Worth Knowing}
+\begin{tikzpicture}[Tool/.style={Card,anchor=north west,text width=40mm,font=\small,align=left,minimum height=22mm}]
+   % the urls contain slashes, so the list names a key and \ToolUrl looks it up
+   \foreach[count=\i] \name/\key/\what in {
+      lintr/lintr/{style and bug patterns, in the editor and in CI},
+      styler/styler/{formats code the same way for everyone},
+      testthat/testthat/{unit tests for the functions of an analysis},
+      flowR/flowr/{dataflow analysis and program slicing for R\supercite{sihler2025dataflow}},
+      renv \& rv/renv/{pin package versions per project},
+      targets/targets/{re-runs only the outdated steps of a pipeline}%
+   } {
+      \pgfmathtruncatemacro\col{mod(\i-1,3)}\pgfmathtruncatemacro\row{div(\i-1,3)}
+      \node[Tool,href node=\csuse{tool@\key}] at ({\col*46mm},{-\row*27mm}) {\textsb{\textcolor{PartTint}{\name}}~\textcolor{gray}{\scriptsize\faExternalLink}\\[1mm]\what};
+   }
+\end{tikzpicture}
+\end{frame}
+
+\begin{frame}[fragile]{Program Slicing}
+\begin{columns}[c,onlytextwidth]
+   \begin{column}{.6\textwidth}
+\begin{minted}[mrslice={6@clean},mrprefix={write.csv(data.frame(time = as.character(as.Date('2026-01-01') + 0:29), value = c(1:29, 500)), 'measurements.csv', row.names = FALSE)}]{R}
+data <- read.csv("measurements.csv")
+data$time <- as.POSIXct(data$time)
+model <- lm(value ~ time, data = data)
+summary(model)
+clean <- subset(data, value < 100)
+plot(clean$time, clean$value)
+\end{minted}
+   \end{column}
+   \begin{column}{.36\textwidth}
+      \small
+      A \textsb{program slice} keeps only the code that can influence the plot, flowR grays out the rest.\supercite{sihler2025dataflow}\\[2mm]
+      The model is not in the slice: it was fitted on \bR{data}, the plot shows \bR{clean}. Figure and model use different rows.
+   \end{column}
+\end{columns}
+\end{frame}

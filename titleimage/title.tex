@@ -1,0 +1,149 @@
+\documentclass{article}
+
+\usepackage[active,tightpage]{preview}
+\usepackage[T1]{fontenc}
+\usepackage[sfdefault]{FiraSans}
+\usepackage{FiraMono}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage[glows]{tikzpingus}
+\usepackage{fontawesome}
+\usepackage{etoolbox}
+\usetikzlibrary{arrows.meta,positioning,calc,shadows,backgrounds}
+\pgfdeclarelayer{foreground}
+\pgfdeclarelayer{middle}
+\pgfdeclarelayer{very-background}
+\pgfsetlayers{very-background,background,main,middle,foreground}
+\def\PreviewBorder{0pt}
+\def\sbseries{\fontseries{sb}\selectfont}
+
+\input{../figures/out/colours.tex}
+\definecolor{BaseGray}{RGB}{66,66,66}
+\colorlet{SoftGray}{BaseGray!40}
+\definecolor{codeKeyword}{HTML}{7A2430}
+% \Row{species}{island}{mass}: a line of the table
+\def\Row#1#2#3{\makebox[12mm][l]{\textcolor{#1}{#1}}\makebox[11mm][l]{#2}\makebox[6mm][r]{#3}\\[1.5pt]}
+\def\Data#1{../figures/out/title-#1.csv}
+
+\tikzset{
+   Window/.style={
+      draw=SoftGray,fill=white,rounded corners=3pt,
+      minimum width=30mm,minimum height=33mm,
+      drop shadow={fill=lightgray!50,shadow xshift=1.2pt,shadow yshift=-1.2pt}
+   },
+   Bar/.style={fill=SoftGray,rounded corners=2pt},
+   Step/.style={-{Kite[length=2.2mm]},very thick,BaseGray!70,line cap=round},
+   Caption/.style={anchor=north east,font=\scriptsize\sbseries,BaseGray,inner sep=1.5pt},
+   Inside/.style={anchor=north west,inner sep=0pt},
+   Code/.style={Inside,font=\fontsize{5.6}{7}\selectfont\ttfamily,align=left},
+}
+\pgfplotsset{
+   discard if not/.style 2 args={
+      x filter/.append code={
+         \edef\tempa{\thisrow{#1}}%
+         \edef\tempb{#2}%
+         \ifx\tempa\tempb\else\def\pgfmathresult{inf}\fi
+      }
+   },
+   window plot/.style={
+      axis lines=left,axis line style={SoftGray,-},
+      ticks=none,scale only axis,
+   },
+}
+
+% \WindowBar{node}{title}: the title bar of a window
+\newcommand\WindowBar[2]{%
+   \fill[Bar] ([yshift=-3.5mm]#1.north west) [rounded corners=2pt] -- (#1.north west) -- (#1.north east) [sharp corners] -- ([yshift=-3.5mm]#1.north east) -- cycle;
+   \node[font=\tiny\sbseries,white,anchor=west] at([shift={(1.5mm,-1.75mm)}]#1.north west) {#2};
+   \node[font=\tiny,white,anchor=east] at([shift={(-1.5mm,-1.75mm)}]#1.north east) {\faCircle\,\faCircle\,\faCircle};
+}
+% \Pingu{x position}{opts}: a penguin standing on the title bar
+\newcommand\Pingu[2]{%
+   \path (#1) coordinate (below);
+   \begin{scope}[shift={(below |- 0,3.3)},scale=.5,transform shape]\pingu[body type=legacy,#2]\end{scope}%
+}
+
+\begin{document}
+\begin{preview}
+\begin{tikzpicture}
+   \useasboundingbox (0,0) rectangle (16,9);
+
+   \node[Window,minimum width=32mm,minimum height=30mm] (data) at (1.95,6.1) {};
+   \node[Window,minimum width=36mm,minimum height=33mm,above right=-29mm and 6mm of data] (code) {};
+   \node[Window,minimum width=38mm,minimum height=34mm,below right=-17mm and 6mm of code] (rplot) {};
+   \node[Window,minimum width=30mm,minimum height=33mm,above right=-20mm and 6mm of rplot] (report) {};
+   \WindowBar{data}{penguins.csv}
+   \WindowBar{code}{analysis.R}
+   \WindowBar{rplot}{Rplot}
+   \WindowBar{report}{report.qmd}
+   \foreach \w/\label in {data/Tidy,code/Transform,rplot/Visualize,report/Communicate}
+      \node[Caption] at(\w.south east) {\label};
+
+   \draw[Step] (data.east) to[out=0,in=180] (code.west);
+   \draw[Step] ([xshift=-2mm]code.south) to[out=-90,in=180] ([yshift=-3mm]rplot.west);
+   \draw[Step] (rplot.east) to[out=0,in=180] (report.west);
+
+   \pgfplotstableread[col sep=comma]{\Data{rows}}\Rows
+   \pgfplotstablegetrowsof{\Rows}\pgfmathtruncatemacro\last{\pgfplotsretval-1}
+   \def\RowsText{}
+   \foreach \r in {0,...,\last} {
+      \pgfplotstablegetelem{\r}{species}\of\Rows\let\species\pgfplotsretval
+      \pgfplotstablegetelem{\r}{island}\of\Rows\let\island\pgfplotsretval
+      \pgfplotstablegetelem{\r}{body_mass}\of\Rows\let\mass\pgfplotsretval
+      \xappto\RowsText{\noexpand\Row{\species}{\island}{\mass}}
+   }
+   \node[Code] at([shift={(2mm,-5.5mm)}]data.north west) {%
+      \color{gray}\makebox[12mm][l]{species}\makebox[11mm][l]{island}\makebox[6mm][r]{mass}\\[1pt]
+      \RowsText};
+
+   \node[Code] at([shift={(2mm,-5.5mm)}]code.north west) {%
+      \color{codeKeyword}library\color{black}(ggplot2)\\[1pt]
+      \color{codeKeyword}ggplot\color{black}(penguins,\\
+      ~~\color{codeKeyword}aes\color{black}(bill\_len,\\
+      ~~~~bill\_dep,\\
+      ~~~~color = species)) +\\
+      ~~\color{codeKeyword}geom\_point\color{black}() +\\
+      ~~\color{codeKeyword}geom\_smooth\color{black}(\\
+      ~~~~method = \color{Gentoo!70!black}"lm"\color{black})};
+
+   \coordinate (scatter) at([shift={(3.5mm,3mm)}]rplot.south west);
+   \begin{axis}[
+      window plot,
+      at={(scatter)},
+      width=33mm,height=25mm,
+   ]
+      \pgfplotsinvokeforeach{Adelie,Chinstrap,Gentoo}{
+         \addplot[only marks,mark=*,mark size=.6pt,#1,fill opacity=.7,draw opacity=0,discard if not={species}{#1}]
+            table[x=bill_len,y=bill_dep,col sep=comma] {\Data{points}};
+         \addplot[#1,thick,line cap=round,discard if not={species}{#1}]
+            table[x=x,y=y,col sep=comma] {\Data{fits}};
+      }
+   \end{axis}
+
+   \node[Inside,font=\tiny\sbseries] (heading) at([shift={(2.5mm,-5.5mm)}]report.north west) {\scriptsize Penguin body mass};
+   % two lines of text, the plot stays below them
+   \foreach \i/\w in {1/26,2/17}
+      \draw[SoftGray!60,line width=1.1pt,line cap=round] ([yshift=-\i*1.6mm]heading.south west) -- ++(\w mm,0);
+   \coordinate (bars) at([shift={(4mm,6.5mm)}]report.south west);
+   \begin{axis}[
+      window plot,
+      at={(bars)},
+      width=22mm,height=14mm,
+      ymin=0,ymax=5600,ybar,bar shift=0pt,bar width=3.2mm,
+      axis y line=none,
+      enlarge x limits=.25,
+   ]
+      \pgfplotsinvokeforeach{Adelie,Chinstrap,Gentoo}{
+         \addplot[fill=#1,draw=none,discard if not={species}{#1}]
+            table[x expr=\coordindex,y=mass,col sep=comma] {\Data{mass}};
+      }
+   \end{axis}
+   \node[anchor=south west,font=\fontsize{4.8}{6}\selectfont,gray,inner sep=0pt] at([shift={(2.5mm,1.5mm)}]report.south west) {Fig.~1: Gentoos are the heaviest};
+
+   \Pingu{[xshift=-4mm]data.south}{glasses,eyes shiny,cup=plotblue,wings grab}
+   \Pingu{[xshift=-2mm]code.south}{small,lightsaber right=plotblue,right wing raise,right item angle=-35,left wing wave,cape=plotblue!70!black,bow tie=plotblue,eyes wink}
+   \Pingu{[xshift=-12mm]report.south}{guitar right=plotblue,right wing grab,left wing grab,right item angle=20,wool hat=plotblue,eyes shiny}
+\end{tikzpicture}
+\end{preview}
+\end{document}

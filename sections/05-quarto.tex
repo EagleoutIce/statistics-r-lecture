@@ -1,0 +1,358 @@
+\begin{frame}{Reproducible Reports in One Slide}
+\PartSummary{%
+   \SummaryCard{Refresh}{Render from scratch}{Restart R, run all}{A fresh render has no hidden state.}
+   \SummaryCard{Lock}{Pin the versions}{rig add 4.6\\ renv::snapshot()\quad rv sync}{R, the packages, and the CRAN date.}
+   \SummaryCard{Random}{Record the seed}{set.seed(42)\\ sessionInfo()}{Seed and R version change the numbers.}
+   \SummaryCard{FileText}{One main file}{analysis.qmd\\ quarto render}{Helpers live in \texttt{R/} and are sourced.}
+   \SummaryCard{CodeFork}{Keep it in git}{git add rv.lock analysis.qmd\\ git tag submitted}{You will rerun it, probably in a year.}
+   \SummaryCard{Cube}{Freeze or report}{Docker\quad Apptainer\quad rix\\ sessionInfo()}{Freeze the system, or at least report it.}
+}
+\NoteRef{quarto/reproducible-reports-in-one-slide}
+\end{frame}
+
+\DefinePingu[.45]\PinguReader{glasses,eyes shiny,cup=plotblue}
+\begin{frame}{Literate Programming}
+\begin{tikzpicture}[overlay,remember picture]
+   \node[align=center,text width=10cm,font=\large] (quote) at([yshift=4mm]current page.center) {%
+      \enquote{Instead of imagining that our main task is to instruct a \textit{computer} what to do,
+      let us concentrate rather on explaining to \textit{human~beings} what we want a computer to do.}};
+   \node[below=2mm,font=\small,gray] at(quote.south) {Donald E. Knuth, 1984\supercite{knuth1984literate}};
+   \onslide<2->{
+      \node[above right,xshift=10mm,yshift=8mm] at(current page.south west) {\usebox\PinguReader};
+   }
+\end{tikzpicture}
+\KeyMessage<2->{With a report you can re-run, you can check the numbers yourself.}
+\ShowPerson{knuth}
+\NoteRef{quarto/literate-programming}
+\end{frame}
+
+\begin{frame}[optional]{Notebook Formats}
+\begin{tikzpicture}[
+   Format/.style={Card,anchor=north,font=\small},
+]
+   \node[Format] (jupyter) at (0,0) {\parbox[t][34mm][t]{37mm}{\raggedright%
+      \textsb{\large Jupyter}\\[1mm]\texttt{.ipynb}\\[2mm]
+      \footnotesize JSON with code, outputs, and execution counts. Runs on a live kernel.\supercite{kluyver2016jupyter}}};
+   \node[Format,right=6mm of jupyter.north east,anchor=north west,visible on=<2->] (rmd) {\parbox[t][34mm][t]{37mm}{\raggedright%
+      \textsb{\large R Markdown}\\[1mm]\texttt{.Rmd}\\[2mm]
+      \footnotesize Plain text, knitted by R into Markdown, then by pandoc into HTML, PDF, or Word.\supercite{xie2018rmarkdown}}};
+   \node[Format,right=6mm of rmd.north east,anchor=north west,visible on=<3->] (quarto) {\parbox[t][34mm][t]{37mm}{\raggedright%
+      \textsb{\large Quarto}\\[1mm]\texttt{.qmd}\\[2mm]
+      \footnotesize The successor: R, Python, Julia, Observable. Papers, slides, websites, books, dashboards.\supercite{allaire2026quarto}}};
+\end{tikzpicture}
+\KeyMessage<4->{\texttt{.Rmd} and \texttt{.qmd} are plain text, so git shows what changed.\\ \texttt{quarto render} and the Knit button start from a clean R session.}
+\NoteRef{quarto/notebook-formats}
+\end{frame}
+
+\begin{frame}[fragile]{Anatomy of a Quarto Document}
+\begin{columns}[c,onlytextwidth]
+   \begin{column}{.56\textwidth}
+\scriptsize
+% code-animation counts only the non-empty lines
+\AnimateCode{onslide={o1:{2,...,7},/8: Markdown with a citation,o9:{10,...,15},o10:{11},o12:{13,14},/16: cross-reference,0}}
+\vspace*{3mm}
+\xlstmintedwithoutlangbadge\BadgeNextListing{analysis.qmd}
+\begin{minted}{void}
+---
+title: "Penguin body mass"
+format: typst
+bibliography: references.bib
+execute:
+  echo: false
+---
+
+Data from the Palmer Archipelago [@gorman2014].
+
+```{r}
+#| label: fig-mass
+#| fig-cap: "Body mass by species."
+library(ggplot2)
+ggplot(penguins, aes(species, body_mass)) +
+  geom_boxplot()
+```
+
+As @fig-mass shows, Gentoo penguins are heavier.
+\end{minted}
+\xlstmintedwithlangbadge
+\endAnimateCode
+   \end{column}
+   \begin{column}{.4\textwidth}
+\begin{tikzpicture}
+   \node[inner sep=0pt,draw=SoftGray,visible on=<7->] (doc) {\includegraphics[width=44mm,page=1,trim=0 34mm 0 0,clip]{examples/report/analysis.pdf}};
+   \node[above=1mm,font=\scriptsize,gray,visible on=<7->] at(doc.north) {\texttt{quarto render analysis.qmd}};
+   \node[below=1mm,font=\scriptsize,visible on=<7->] at(doc.south) {\hyperlink{code-quarto}{\textcolor{PartTint}{\faFileCodeO}~source in the appendix}};
+\end{tikzpicture}
+   \end{column}
+\end{columns}
+\Tutorial{https://quarto.org/docs/get-started}{Quarto tutorial}
+\Stage{Communicate}
+\NoteRef{quarto/anatomy-of-a-quarto-document}
+\end{frame}
+
+\begin{frame}{Rendering}
+\begin{tikzpicture}[
+   Step/.style={Card,align=center,minimum height=12mm,text width=17mm,font=\small},
+]
+   \node[Step] (qmd) at (0,0) {\texttt{.qmd}\\\texttt{.ipynb}};
+   \node[Step,right=8mm of qmd,visible on=<2->] (engine) {\textsb{knitr}\\or \textsb{Jupyter}};
+   \node[Step,right=8mm of engine,visible on=<3->] (md) {\texttt{.md}\\with results};
+   \node[Step,right=8mm of md,visible on=<4->] (pandoc) {\textsb{pandoc}};
+   \draw[Link,visible on=<2->] (qmd) to[l={run}] (engine);
+   \draw[Link,visible on=<3->] (engine) to[l={results}] (md);
+   \draw[Link,visible on=<4->] (md) to[l={convert}] (pandoc);
+   \onslide<5->{
+      \foreach[count=\i] \format/\colour in {HTML/PartTint,PDF/PartTint,Word/PartTint,Reveal.js/PartTint,Typst/PartTint} {
+         \node[Out,fill=\colour,anchor=west] (out-\i) at ($(pandoc.east)+(7mm,16.8mm-\i*5.6mm)$) {\format};
+         \draw[Link,gray] (pandoc.east) to[out=0,in=180] (out-\i.west);
+      }
+   }
+\end{tikzpicture}
+\KeyMessage<6->{Rendering a \texttt{.qmd} runs every chunk again, top to bottom (unless it is frozen).\\ A rendered \texttt{.ipynb} shows whatever outputs were saved last.}
+\Stage{Communicate}
+\NoteRef{quarto/rendering}
+\end{frame}
+
+\NextNoteRef{quarto/quiz-reproducibility-of-notebooks}
+\Quiz{Reproducibility of Notebooks}{Researchers re-ran Jupyter notebooks from GitHub.\\ Which share gave the same results as stored in them?}
+   {about \qty{4}{\percent}}{about \qty{24}{\percent}}{about \qty{50}{\percent}}{about \qty{76}{\percent}}{A}
+   {About \qty{24}{\percent} of the notebooks ran without errors. Only about \qty{4}{\percent} gave the same results.\supercite{pimentel2019jupyter}}
+
+\begin{frame}{Hidden State in Notebooks}
+\begin{tikzpicture}[
+   Cell/.style={draw=SoftGray,fill=BackGray,rounded corners=2pt,minimum width=56mm,text width=52mm,minimum height=7mm,anchor=west,font=\scriptsize\ttfamily,align=left},
+   Count/.style={font=\scriptsize\ttfamily,gray,anchor=east},
+]
+   \node[Cell] (c1) at (0,0) {\bR{x <- read.csv("data.csv")}};
+   \node[Cell,below=2mm of c1.south west,anchor=north west] (c2) {\bR{x\$mass <- x\$mass / 1000 \# g to kg}};
+   \node[Cell,below=2mm of c2.south west,anchor=north west] (c3) {\bR{mean(x\$mass)}};
+   \node[Count] at(c1.west) {[1]};
+   \node[Count] at(c2.west) {\only<-2|handout:0>{[2]}\only<3->{\textcolor{Warn}{[4]}}};
+   \node[Count] at(c3.west) {\only<-1|handout:0>{[3]}\only<2->{\textcolor{Warn}{[5]}}};
+   \onslide<2->{\node[right=3mm,font=\scriptsize,Warn,align=left] at(c3.east) {re-run after\\an edit above};}
+   \onslide<3->{\node[right=3mm,font=\scriptsize,Warn,align=left] at(c2.east) {ran twice:\\now in tonnes};}
+   \onslide<4->{
+      \node[Card,anchor=north west,text width=4.4cm,font=\small] (study) at ([xshift=26mm]c1.north east) {%
+         A study collected 1.4~million notebooks from GitHub and re-ran the valid ones.\supercite{pimentel2019jupyter}\\[2mm]
+         \qty{24}{\percent} finished without errors,\\
+         \Reveal<5->{and \qty{4}{\percent} reproduced their stored results.}};
+   }
+\end{tikzpicture}
+\KeyMessage<6->{Notebooks fail mostly through missing packages, hidden state, and cells run out of order.\supercite{pimentel2019jupyter,rule2019tensimplerules}}
+\NoteRef{quarto/hidden-state-in-notebooks}
+\end{frame}
+
+\begin{frame}[optional]{Reactive Notebooks}
+\begin{tikzpicture}[
+   Cell/.style={draw=SoftGray,fill=white,rounded corners=2pt,minimum width=52mm,text width=48mm,minimum height=7mm,font=\scriptsize\ttfamily,align=left},
+   Stale/.style={draw=Warn,very thick},
+   Dep/.style={Link,gray,thick},
+]
+   \node[Cell] (data) at (0,0) {\bR{data <- read.csv("data.csv")}};
+   \node[Cell,below=6mm of data.south west,anchor=north west] (clean) {\bR{clean <- subset(data, value > 0)}};
+   \node[Cell,below=6mm of clean.south west,anchor=north west] (mean) {\bR{mean(clean\$value)}};
+   \draw[Dep] (data.west) to[bend right=40] (clean.west);
+   \draw[Dep] (clean.west) to[bend right=40] (mean.west);
+   \onslide<2->{
+      \node[Cell,Stale] at(data) {\bR{data <- read.csv("data-2.csv")}};
+      \node[Cell,Stale] at(clean) {\bR{clean <- subset(data, value > 0)}};
+      \node[Cell,Stale] at(mean) {\bR{mean(clean\$value)}};
+      \node[right=3mm,font=\scriptsize,Warn] at(clean.east) {re-runs by itself};
+      \node[right=3mm,font=\scriptsize,Warn] at(mean.east) {re-runs by itself};
+   }
+   \node[right=27mm,anchor=north west,text width=5.4cm,font=\small,align=left] (marimo) at(data.north east) {%
+      \textsb{marimo}\supercite{marimo2026} tracks which cell uses which variable. Editing a cell re-runs its dependents.
+      The notebook is a plain \texttt{.py} file: a script or an app.};
+   \node[below=3mm of marimo.south west,anchor=north west,text width=5.4cm,font=\small,align=left,visible on=<3->] {%
+      In R: Quarto renders top to bottom in a fresh session, Shiny is reactive.};
+\end{tikzpicture}
+\KeyMessage<3->{A reactive notebook re-runs dependent cells itself, so an edit leaves no stale output.}
+\NoteRef{quarto/reactive-notebooks}
+\end{frame}
+
+\begin{frame}{Analysis Code Is Research Software}
+\begin{tikzpicture}[
+   Stage/.style={Card,align=center,text width=22.5mm,minimum height=11mm,font=\small},
+   Reuse/.style={Link,thick,gray},
+]
+   \node[Stage] (script) at (0,0) {\enquote{quick} plot script};
+   \node[Stage,right=9mm of script,visible on=<2->] (paper) {figure in a paper};
+   \node[Stage,right=9mm of paper,visible on=<3->] (copy) {copied by a colleague};
+   \node[Stage,right=9mm of copy,visible on=<4->] (thesis) {adapted for a thesis};
+   \draw[Reuse,visible on=<2->] (script) -- (paper);
+   \draw[Reuse,visible on=<3->] (paper) -- (copy);
+   \draw[Reuse,visible on=<4->] (copy) -- (thesis);
+   \draw[Reuse,dashed,visible on=<5->] (thesis.south) -- ++(0,-6mm) -| node[pos=.25,fill=white,inner xsep=2mm,font=\scriptsize] {years later: does the replication package still run?} (script.south);
+   \node[Card,anchor=north,text width=96mm,font=\small,draw=Warn,visible on=<6->] (study) at([yshift=-12mm]$(paper.south)!.5!(copy.south)$) {%
+      \textsb{\num{9000}+ R files} from replication packages on Harvard Dataverse:\supercite{trisovic2022large}\\
+      \qty{74}{\percent} crashed when re-run, \qty{56}{\percent} even after automatic cleaning.\\[1mm]
+      \textsb{R Markdown files on GitHub}: \qty{65}{\percent} do not run, even after repair attempts.\supercite{islam2024executability}};
+   % TODO: add the reuse numbers from flowR, as a card to the left of the study card
+\end{tikzpicture}
+\KeyMessage<7->{Someone will re-run your thesis plot script in a year, probably you.\\ Keep it in git, pin its packages, and try it now and then.}
+\NoteRef{quarto/analysis-code-is-research-software}
+\end{frame}
+
+\begin{frame}[optional]{Pinning the Environment}
+\centering
+\begin{tikzpicture}[
+   Level/.style={font=\scriptsize\sbseries,text=gray,anchor=north},
+   Tool/.style={Card,align=left,text width=21mm,font=\scriptsize,anchor=north,minimum height=27mm},
+   Name/.style={font=\small\sbseries},
+]
+   \draw[SoftGray,line width=2pt,-Kite] (0,0) -- (14,0);
+   \foreach \x/\what in {1.4/packages,4.15/+ R version,6.9/+ system libraries,9.65/+ operating system,12.4/hardware}
+      \node[Level] at (\x,-1.5mm) {\what};
+   \node[above=1.5mm,font=\scriptsize,gray,anchor=south east] at(14,0) {more is pinned};
+   \node[Tool,visible on=<2->] at (1.4,-7mm) {{\small\sbseries renv}\supercite{ushey2026renv}\\\textcolor{darkgray}{a lockfile of the project library}\\[1.5mm]
+      {\small\sbseries rv}\supercite{a2ai2026rv}\textsb{, uvr}\\\textcolor{darkgray}{declarative, fast}};
+   \node[Tool,visible on=<3->] at (4.15,-7mm) {{\small\sbseries rig}\supercite{rlib2026rig}\\\textcolor{darkgray}{installs and switches R versions}\\[1.5mm]
+      {\small\sbseries rv}\\\textcolor{darkgray}{records the R version too}};
+   \node[Tool,visible on=<4->] at (6.9,-7mm) {{\small\sbseries rix}\supercite{rodrigues2026rix}\\\textcolor{darkgray}{R, packages, and system libraries through Nix}};
+   \node[Tool,visible on=<5->] (os) at (9.65,-7mm) {{\small\sbseries Docker}\\\textcolor{darkgray}{\textsb{Apptainer}\supercite{apptainer2026} on HPC clusters}\\[1.5mm]
+      {\small\sbseries R4R}\supercite{donatbouillud2025r4r}\\\textcolor{darkgray}{traces a run, builds a minimal image}};
+   \node[Tool,draw=Warn,visible on=<6->] at (12.4,-7mm) {{\small\sbseries cannot be pinned}\\\textcolor{darkgray}{record it, and compare with a tolerance}};
+   \node[Card,draw=PartTint,below=3mm of os.south,anchor=north,font=\scriptsize,text width=60mm,align=center,visible on=<7->] {%
+      R4R reproduced \textsb{\qty{97.5}{\percent}} of the deterministic\\R Markdown notebooks from Kaggle exactly.};
+\end{tikzpicture}
+\KeyMessage<8->{Pin what the result depends on, and record the rest with \bR{sessionInfo()}.}
+\Tutorial{https://rstudio.github.io/renv}{renv introduction}
+\NoteRef{quarto/pinning-the-environment}
+\end{frame}
+
+\begin{frame}{Version Management in R}
+\centering
+\begin{tikzpicture}[Cmd/.style={Card,text width=66mm,align=left,font=\scriptsize,minimum height=25mm,anchor=north west}]
+   \node[Cmd,visible on=<1->] at (0,0) {\textsb{\small R itself: rig}\\[1mm]
+      \CommandRowR{rig add 4.6}{install a version beside the others}
+      \CommandRowR{rig default 4.6}{switch}
+      \CommandRowR{rig list}{what is installed}
+      \CommandRowR{R.version.string}{record it in the report}};
+   \node[Cmd,visible on=<2->] at (72mm,0) {\textsb{\small Packages: renv}\\[1mm]
+      \CommandRowR{renv::init()}{a library per project}
+      \CommandRowR{renv::install("dplyr@1.2.1")}{one exact version}
+      \CommandRowR{renv::snapshot()}{versions into \texttt{renv.lock}}
+      \CommandRowR{renv::restore()}{the same versions elsewhere}};
+   \node[Cmd,visible on=<3->] at (0,-28mm) {\textsb{\small Or declared: rv, as in this lecture}\\[1mm]
+      \CommandRow{r\_version = "4.6"}{in \texttt{rproject.toml}}
+      \CommandRowR{url = ".../cran/2026-07-01"}{CRAN as of one day}
+      \CommandRowR{dependencies = ["dplyr", ...]}{the packages}
+      \CommandRowR{rv sync}{resolve, install, write \texttt{rv.lock}}};
+   \node[Cmd,visible on=<4->] at (72mm,-28mm) {\textsb{\small Into git}\\[1mm]
+      \CommandRow{renv.lock\quad rv.lock}{commit}
+      \CommandRow{rproject.toml\quad .Rprofile}{commit}
+      \CommandRow{renv/library/\quad rv/library/}{ignore}
+      \CommandRowR{git tag submitted}{the state you handed in}};
+\end{tikzpicture}
+\Tutorial{https://rstudio.github.io/renv/articles/renv.html}{renv: introduction}
+\NoteRef{quarto/version-management-in-r}
+\end{frame}
+
+\begin{frame}[fragile,optional]{Same Code, Different Machine}
+\begin{minipage}{.6\textwidth}
+\footnotesize
+\begin{rsession}
+(0.1 + 0.2) + 0.3 == 0.1 + (0.2 + 0.3)!*\CodeMark{fp}*!
+RNGkind("L'Ecuyer-CMRG")!*\CodeMark{rng}*!
+La_library()!*\CodeMark{blas}*!
+RNGkind("default")!*\CodeMark{back}*!
+\end{rsession}
+\end{minipage}
+\CodeNote<1->{fp}{other order of sums, other result\supercite{goldberg1991floating}}
+\CodeNote<2->{rng}{a generator with independent streams per worker\supercite{lecuyer2002streams}}
+\CodeNote<4->{blas}{the LAPACK in use: linear algebra libraries round differently}
+\CodeNote<5->{back}{back to the default generator}
+\KeyMessage<6->{Compare results with \bR{all.equal()} and a tolerance, not with \texttt{==}.\\ On a cluster, pin the modules or use an Apptainer image.}
+\NoteRef{quarto/same-code-different-machine}
+\end{frame}
+
+\NextNoteRef{quarto/quiz-stability-of-random-numbers}
+\Quiz{Stability of Random Numbers}{You run \texttt{set.seed(42); sample(10, 3)} in R~3.5 and in R~4.4.\\ What do you get?}
+   {the same numbers}{different numbers}{the same numbers, reordered}{new numbers on every run}{B}
+   {R~3.6.0 changed how \texttt{sample()} draws integers. The default generator is the same on every OS, but the R version is part of the setup.}
+
+\begin{frame}[fragile]{Randomness: Seeds, Samples, and Classifiers}
+\begin{minipage}{.6\textwidth}
+\footnotesize
+\begin{rsession}
+set.seed(1); sample(10, 3)!*\CodeMark{s1}*!
+set.seed(1); sample(10, 3)!*\CodeMark{s2}*!
+RNGkind(sample.kind = "Rounding")!*\CodeMark{old}*!
+set.seed(1); sample(10, 3)!*\CodeMark{s3}*!
+\end{rsession}
+\end{minipage}
+\CodeNote<2->{s2}{same seed, same numbers}
+\CodeNote<3->{old}{\bR{sample()} as before R 3.6.0 \dots}
+\CodeNote<4->{s3}{\dots{} draws other numbers}
+\KeyMessage<5->{Splits, folds, forests, and network weights are all random:\\ record the seed, and report the spread over several seeds.}
+\NoteRef{quarto/randomness-seeds-samples-and-classifiers}
+\end{frame}
+
+\begin{frame}[optional]{Structuring a Notebook Project}
+\begin{tikzpicture}[
+   Entry/.style={font=\footnotesize\ttfamily,anchor=west,inner sep=1pt},
+   Why/.style={font=\footnotesize,BaseGray,anchor=west},
+]
+   \node[Entry,font=\small\ttfamily\bfseries] (root) at (0,0) {penguin-study/};
+   \foreach[count=\i] \entry/\why/\step in {
+      \_quarto.yml/{project options, \texttt{freeze:\,auto}}/2,
+      renv.lock/{exact package versions}/3,
+      {R/}/{functions: the actual logic}/4,
+      {tests/}/{\texttt{testthat} for these functions}/4,
+      {data/raw/}/{read-only input}/5,
+      {analysis/*.qmd}/{narrative: calls the functions}/6,
+      {.github/workflows/}/{render on every push}/7%
+   } {
+      \onslide<\step->{
+         \node[Entry] (e\i) at ($(root.south west)+(5mm,-\i*7mm+1mm)$) {\entry};
+         \draw[SoftGray] ($(root.south west)+(2mm,0)$) |- (e\i.west);
+         \node[Why] at ($(e\i.west)+(40mm,0)$) {\why};
+      }
+   }
+   \onslide<8->{
+      \node[Card,anchor=north east,text width=4.2cm,font=\footnotesize] at ($(root.north)+(127mm,0)$) {%
+         \textsb{\small Rules of thumb}\supercite{rule2019tensimplerules,wilson2017goodenough}\\[1mm]
+         Keep logic out of notebooks.\\
+         Render from scratch, often.\\
+         Pin the environment.\\
+         Do not edit raw data by hand.\\
+         Commit sources and \texttt{\_freeze/}, not outputs.};
+   }
+\end{tikzpicture}
+\NoteRef{quarto/structuring-a-notebook-project}
+\end{frame}
+
+\begin{frame}[fragile,optional]{Parameters, Freezing, Publishing}
+\begin{minipage}{.6\textwidth}
+\footnotesize
+\textsb{\small\texttt{report.qmd}}
+\begin{minted}[escapeinside={!*}{*!}]{yaml}
+---
+title: "Species report"
+params:
+  species: "Adelie"!*\CodeMark{par}*!
+---
+\end{minted}
+\begin{uncoverenv}<2->
+\textsb{\small Shell}
+\begin{minted}[emph={quarto,render,publish},emphstyle=\color{codeFunction},escapeinside={!*}{*!}]{bash}
+quarto render report.qmd -P species:Gentoo!*\CodeMark{other}*!
+quarto render!*\CodeMark{all}*!
+quarto publish gh-pages!*\CodeMark{pub}*!
+\end{minted}\end{uncoverenv}
+\end{minipage}
+\CodeNote<1->{par}{\texttt{params\$species} in R}
+\CodeNote<2->{other}{one template, many reports}
+\CodeNote<3->{all}{with \texttt{freeze: auto}: re-run what changed}
+\CodeNote<4->{pub}{a website from the project\supercite{allaire2026quarto}}
+\KeyMessage<5->{For long pipelines, \bR{targets} rebuilds only the outdated steps.\supercite{landau2021targets}}
+\Stage{Communicate}
+\NoteRef{quarto/parameters-freezing-publishing}
+\end{frame}
+
+\NextNoteRef{quarto/takeaways-1}
+\Takeaways{
+   \Learning{refresh}{Render from scratch}{A saved notebook shows whatever ran last. Restart and run all.}
+   \Learning{lock}{Pin the versions}{rig for R, \texttt{renv.lock} or \texttt{rv.lock} for packages, \texttt{sessionInfo()} for the rest.}
+   \Learning{random}{Record seed and R version}{Results depend on both. Show several seeds.}
+   \Learning{code-fork}{Keep analysis code in git}{You will run your plot scripts again.}
+}

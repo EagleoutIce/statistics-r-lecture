@@ -1,0 +1,5 @@
+*.typ
+analysis_files/
+
+/.quarto/
+**/*.quarto_ipynb

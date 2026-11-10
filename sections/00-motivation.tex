@@ -1,0 +1,59 @@
+\DefinePingu[.4]\PinguShiny{eyes shiny,magnifier left=plotblue}
+\newsavebox\AnscombePlots
+
+\begin{frame}[label=plot-anscombe]{Anscombe's Quartet}
+\begin{lrbox}{\AnscombePlots}
+\begin{tikzpicture}
+   \begin{groupplot}[
+      group style={group size=2 by 2,horizontal sep=9mm,vertical sep=11.5mm},
+      lecture axis,
+      width=4.6cm,height=3.4cm,
+      xmin=2,xmax=20,ymin=2,ymax=14,
+      xtick={4,8,...,20},ytick={4,8,12},
+      anscombe points/.style={only marks,mark=*,mark size=1.5pt,plotblue,fill opacity=.8},
+      anscombe fit/.style={Warn,thick,domain=4:19,samples=2,visible on=<7->},
+      xlabel={\(x\)},ylabel={\(y\)},xlabel style={yshift=2mm},ylabel style={yshift=0mm},
+   ]
+      \nextgroupplot[title=Set I]
+      \addplot[anscombe points,visible on=<3->,discard if not={set}{1}] table[x=x,y=y,col sep=comma] {figures/out/anscombe.csv};
+      \addplot[anscombe fit] {3 + 0.5*x};
+      \nextgroupplot[title=Set II]
+      \addplot[anscombe points,visible on=<4->,discard if not={set}{2}] table[x=x,y=y,col sep=comma] {figures/out/anscombe.csv};
+      \addplot[anscombe fit] {3 + 0.5*x};
+      \nextgroupplot[title=Set III]
+      \addplot[anscombe points,visible on=<5->,discard if not={set}{3}] table[x=x,y=y,col sep=comma] {figures/out/anscombe.csv};
+      \addplot[anscombe fit] {3 + 0.5*x};
+      \nextgroupplot[title=Set IV]
+      \addplot[anscombe points,visible on=<6->,discard if not={set}{4}] table[x=x,y=y,col sep=comma] {figures/out/anscombe.csv};
+      \addplot[anscombe fit] {3 + 0.5*x};
+   \end{groupplot}
+\end{tikzpicture}
+\end{lrbox}
+\begin{tikzpicture}[overlay,remember picture]
+   \node[right=13mm,yshift=6mm] (stats) at(current page.west) {%
+      \footnotesize
+      \begin{tabular}{@{}l@{\quad}S[table-format=<2.3]@{}}
+         \toprule
+         \textsb{Property} & {\textsb{All four sets}} \\
+         \midrule
+         Observations \(n\) & 11 \\
+         Mean of \(x\) & 9 \\
+         Mean of \(y\) & 7.50 \\
+         Variance of \(x\) & 11 \\
+         Variance of \(y\) & \approx 4.12 \\
+         Correlation & 0.816 \\
+         Linear fit & {\(y = 3.00 + 0.500\,x\)} \\
+         \bottomrule
+      \end{tabular}%
+   };
+   \node[above,font=\small\sbseries] at(stats.north) {Summary statistics of four datasets\supercite{anscombe1973graphs}};
+   \onslide<2->{
+      \node[below right,xshift=-2mm,yshift=-4mm] (pingu) at(stats.south west) {\usebox\PinguShiny};
+      \node[anchor=north west,font=\small,align=left,text width=4.6cm] at(pingu.north east) {%
+         \alt<8->{\textsb{Plot your data first.}\\[1mm]\footnotesize The four sets share these summaries, but not their shape. More in the \textit{Datasaurus Dozen}.\supercite{matejka2017samestats}}{So the four datasets\\are basically the same?}};
+   }
+   \node[left=6mm,yshift=-1mm,visible on=<3->] (plots) at(current page.east) {\usebox\AnscombePlots};
+\end{tikzpicture}
+\PlotCode{anscombe}
+\NoteRef{motivation/plot-anscombe}
+\end{frame}

@@ -1,0 +1,8 @@
+format:
+  typst:
+    papersize: a6
+    margin: {x: 8mm, y: 8mm}
+    fig-width: 4
+    fig-height: 2.6
+execute:
+  warning: false

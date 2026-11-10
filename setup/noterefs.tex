@@ -1,0 +1,19 @@
+% Speaker notes kept outside the sources: notes/notes.tex holds one DefineNote entry per note (key and text), the frames hold a NoteRef with the key.
+% Without notes/notes.tex (the public copy) every \NoteRef and \NextNoteRef expands to nothing.
+% tools/extract-notes moves the notes out of the sources.
+\makeatletter
+\newcommand\DefineNote[2]{\long\expandafter\gdef\csname lecture@note@#1\endcsname{#2}}
+% \NoteRef{key} is \note{text}, if the key is defined
+\newcommand\NoteRef[1]{\ifcsname lecture@note@#1\endcsname
+   \expandafter\expandafter\expandafter\note\expandafter\expandafter\expandafter{\csname lecture@note@#1\endcsname}%
+\else\LectureNoteMissing{#1}\fi}
+% \NextNoteRef{key} is \NextNote{text}, the note of the next \Quiz or \Takeaways frame, if the key is defined
+\newcommand\NextNoteRef[1]{\ifcsname lecture@note@#1\endcsname
+   \expandafter\expandafter\expandafter\NextNote\expandafter\expandafter\expandafter{\csname lecture@note@#1\endcsname}%
+\else\LectureNoteMissing{#1}\fi}
+% a key without text only warns, and only if notes/notes.tex is there (the public copy has none)
+\newif\iflecture@notesfile
+\newcommand\LectureNoteMissing[1]{\iflecture@notesfile\PackageWarningNoLine{lecture}{No text for the note #1 in notes/notes.tex}\fi}
+% the notes are read when the document starts, so that their text is read with the same catcodes as in the frames
+\AtBeginDocument{\IfFileExists{notes/notes.tex}{\lecture@notesfiletrue\input{notes/notes.tex}}{}\IfFileExists{notes/title.tex}{\input{notes/title.tex}}{}}
+\makeatother

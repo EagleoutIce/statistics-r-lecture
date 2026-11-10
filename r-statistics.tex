@@ -1,0 +1,187 @@
+\errorcontextlines=9999
+% the handout is the default, r-statistics-anim.tex builds every overlay
+\ifdefined\LectureAnimated\else\PassOptionsToClass{handout}{beamer}\fi
+\documentclass[
+   aspectratio=169,
+   10pt,
+   uniqueslidenumber,
+   nosectionframes,
+   professionalfonts
+]{beamer}
+
+\input{setup/preamble}
+\input{setup/styles}
+
+\mrRSetup{library(dplyr, warn.conflicts = FALSE)}
+\mrRSetup{invisible(options(width = 70))}
+\mrRSetup{males <- function() droplevels(subset(penguins, sex == "male" & species %in% c("Adelie", "Chinstrap")))}
+\mrRSetup{mass_test <- function() t.test(body_mass ~ species, data = males())}
+\mrRSetup{mass_diff <- function() round(-diff(mass_test()$estimate))}
+\mrRSetup{mass_ci <- function() paste(round(mass_test()$conf.int), collapse = ", ")}
+\mrRSetup{mass_lo <- function() -round(mass_test()$conf.int[1])}
+\mrRSetup{mass_hi <- function() round(mass_test()$conf.int[2])}
+\mrRSetup{mass_sd <- function() with(males(), { s <- split(body_mass, species); sqrt(((length(s[[1]]) - 1) * var(s[[1]]) + (length(s[[2]]) - 1) * var(s[[2]])) / (length(body_mass) - 2)) })}
+\mrRSetup{mass_power_n <- function() ceiling(power.t.test(delta = mass_diff(), sd = mass_sd(), power = 0.8)$n)}
+\mrRSetup{mass_power <- function() round(100 * power.t.test(n = 2 / sum(1 / table(males()$species)), delta = mass_diff(), sd = mass_sd())$power)}
+\mrRSetup{mass_tval <- function() round(unname(mass_test()$statistic), 2)}
+\mrRSetup{mass_df <- function() round(unname(mass_test()$parameter))}
+\mrRSetup{mass_p <- function() round(mass_test()$p.value, 2)}
+\mrRSetup{mass_crit <- function() round(qt(0.975, mass_test()$parameter), 2)}
+\mrRSetup{mass_t <- function() with(mass_test(), sprintf("t(%.1f) = %.2f, p = %.2f", parameter, statistic, p.value))}
+\mrRSetup{mass_n <- function() paste(table(males()$species), collapse = " and ")}
+\mrRSetup{mass_d <- function() with(males(), { s <- split(body_mass, species); round(abs(diff(sapply(s, mean))) / sqrt(((length(s[[1]]) - 1) * var(s[[1]]) + (length(s[[2]]) - 1) * var(s[[2]])) / (length(body_mass) - 2)), 2) })}
+\mrRSetup{heaviest <- penguins |> filter(!is.na(sex)) |> group_by(species, sex) |> summarise(mass = round(mean(body_mass)), n = n(), .groups = "drop") |> arrange(desc(mass)) |> as.data.frame()}
+\mrRSetup{bill_cor <- function(of = levels(penguins$species)) with(subset(penguins, species %in% of), round(cor(bill_len, bill_dep, use = "complete.obs"), 2))}
+
+\title[Statistics with R]{Statistics with R}
+\subtitle[Research Software Engineering]{Plots, Tests, and Notebooks in Research Software Engineering}
+\author[F. Sihler]{Florian Sihler}
+\date{November 9, 2026}
+
+\fancylogos{sp,uulm}
+
+\begin{document}
+
+% the note of the title page (private, notes/title.tex) is stored directly for the note page: \note itself needs a
+% frame, and \maketitle builds its frame on its own
+\ifdefined\LectureNotes\ifdefined\LectureTitleNote\LectureNoteAdd{\LectureTitleNote}\fi\fi
+\maketitle[titleimage/title][20]
+
+\StartTiming{intro}
+\begin{frame}[c]{Outline}
+   \NoteRef{main/outline}
+   \NoteTimetable
+   \hypertarget<1>{outline}{}%
+   \centering
+   \hspace*{-30mm}\Roadmap{0}
+   \UsePingu{says}{9}%
+   \begin{tikzpicture}[overlay,remember picture]
+      \node[anchor=north east,inner sep=0pt] (pingu) at([xshift=-7mm,yshift=-19mm]current page.north east) {\usebox\PinguBox};
+      \node[rectangle callout,callout absolute pointer={([xshift=1mm,yshift=2mm]pingu.west)},draw=SoftGray,fill=white,
+         rounded corners=3pt,font=\scriptsize\itshape,text width=38mm,align=left,inner sep=4pt,anchor=east]
+         at([xshift=-5mm,yshift=2mm]pingu.west) {Disclaimer: I am a software engineer, not a statistics expert. Check the references, and stop me if I say stupid stuff!};
+   \end{tikzpicture}%
+\end{frame}
+
+\AtBeginSection{%
+   \colorlet{PartTint}{\PartColour{\thesection}}%
+   \ifcsname timing@lecture@\thesection\endcsname\StartTiming{\thesection}\fi
+   \begin{frame}[c,noframenumbering]{Outline}
+      \gdef\SlideTimingDivider{}\NoteTimetable
+      \hypertarget{part-\thesection}{}%
+      \centering
+      \Roadmap{\thesection}
+   \end{frame}%
+}
+
+\input{sections/00-motivation}
+
+\section{Exploring Data}
+\input{sections/01-exploring}
+
+\section{Testing and Communicating}
+\input{sections/02-testing}
+\input{sections/03-communicating}
+
+% the second lecture starts with a title page of its own, which takes no time of the timetable
+\EndTiming
+\date{November 10, 2026}
+\maketitle[titleimage/title][20]
+
+% \RecapAnswer{overlay}{answer}: the answer to a recap question, in gray, shown after all questions
+\newcommand\RecapAnswer[2]{\onslide<#1-|handout:1>{\textcolor{darkgray}{\scriptsize\textit{#2}\endgraf}}}
+\begin{frame}{Recap: Lecture 1}
+   \vspace*{-3mm}
+   \begin{enumerate}
+      \itemsep1.5pt
+      \item<2-> Why do we clean data, and what does clean data look like?\\*
+         \RecapAnswer8{Typos, mixed units, and gaps carry into every test. Clean: one row per observation, one column per variable, fixed in code. Document every tidying step and keep the raw sources.}
+      \item<3-> Which summary statistics can we use for an ordinal variable? Name two examples of ordinal variables.\\*
+         \RecapAnswer9{Median and interquartile range, or counts. \textsb{Not} mean and standard deviation: the steps have no known size. E.\,g. agreement scales, school grades, sizes S, M, L.}
+      \item<4-> What was Simpson's paradox?\\*
+         \RecapAnswer{10}{A trend over all data reverses within every group, because a third variable drives both. Penguins: bill depth falls with bill length overall, but rises within each species. Group first, report per group.}
+      \item<5-> Is \enquote{Our tool might be better somehow} a hypothesis?\\*
+         \RecapAnswer{11}{No: better at what, and how would we see it? No result can refute \enquote{might}. Testable: \enquote{With our tool, the tasks take less time on average.}}
+      \item<6-> What does a \(t\)-test measure?\\*
+         \RecapAnswer{12}{Whether two means differ by more than noise explains: \(t\) is the difference of the means divided by its standard error. Report it with \(n\), the difference and its \qty{95}{\percent} confidence interval, \(t\), degrees of freedom, exact~\(p\).}
+      \item<7-> What does \(p = 0.03\) tell you, and why is \(p\) alone not enough?\\*
+         \RecapAnswer{13}{How surprising our data would be under \(H_0\), not the chance that \(H_0\) is true. Alone it misleads: \textsb{p-hacking}, \textsb{no effect size}, tiny effects significant with large \(n\), 0.05 is arbitrary.\supercite{wasserstein2016asa}}
+   \end{enumerate}
+\NoteRef{main/lecture-1-in-one-slide}
+\end{frame}
+
+\StartTiming{talk1}
+\input{setup/bad-report}
+\begin{frame}{Talk Groups: What Is Wrong with This Report?}
+\centering
+\begin{tikzpicture}
+   \node[Card,draw=PartTint,text width=118mm,align=left,font=\small,inner sep=8pt] (report) {\linespread{1.25}\selectfont\BadReport\par};
+   \node[below=5mm of report] {\ActivityPill{\faClockO}{\qty{5}{\minute}\Dot groups of 3 to 4\Dot find every problem, and the fix}};
+\end{tikzpicture}
+\NoteRef{main/talk-groups-what-is-wrong-with-this-report}
+\end{frame}
+\StartTiming{talk1a}
+
+\begin{frame}[solution]{What Is Wrong with This Report}
+\let\Flaw\FlawShown
+\begin{columns}[c,onlytextwidth]
+   \begin{column}{.45\textwidth}
+      \begin{tikzpicture}
+         \node[Card,draw=PartTint,text width=60mm,align=left,font=\scriptsize,inner sep=5pt] {\linespread{1.1}\selectfont\raggedright\BadReport\par};
+      \end{tikzpicture}
+   \end{column}
+   \begin{column}{.53\textwidth}
+      \scriptsize\raggedright\setlength\parskip{0pt}
+      \ReportFixes
+   \end{column}
+\end{columns}
+\NoteRef{main/what-is-wrong-with-this-report}
+\end{frame}
+
+% the same study and the same made-up data as the talk group report, only reported honestly: 12 colleagues, two
+% removed after a look (n = 10: 312 s against 193 s, 38 % less time, t(9) = 2.4, p = 0.04), all twelve: p = 0.12
+\begin{frame}[solution,optional]{The Same Report, Done Right}
+\centering
+\begin{tikzpicture}
+   \node[Card,draw=GoodGreen,text width=128mm,align=left,font=\footnotesize,inner sep=7pt] {\linespread{1.15}\selectfont
+      \textsb{Hypothesis}, stated before the study: with our tool, developers solve the five tasks faster than with the state of the art (CatPurr).\\[1mm]
+      \textsb{Results.} Twelve colleagues from our lab solved the same five tasks with both tools.
+      After looking at the data, we removed two participants whose times looked unusual.
+      For the remaining ten, the mean time per task fell from \qty{312}{\second} to \qty{193}{\second}, a difference of \qty{119}{\second}
+      (\qty{95}{\percent} confidence interval \qtyrange{7}{231}{\second}, paired \(t\)-test, \(t(9) = 2.4\), \(p = 0.04\)).
+      With all twelve, the difference is \qty{85}{\second} (\qtyrange{-25}{195}{\second}, \(p = 0.12\)).
+      We also measured errors, satisfaction, and learnability: after a Holm correction for the four outcomes, none differs (smallest adjusted \(p = 0.16\)).
+      Satisfaction did not differ, but its interval (\numrange{-0.8}{0.6} points on a scale from 1 to 5) does not rule out a difference.
+      In an exploratory analysis, developers with more than five years of experience gained most (\(p = 0.03\)), which needs a study of its own.\\[1mm]
+      \textsb{Threats to validity.} A small sample of colleagues, exclusions decided after a look at the data, and one set of five tasks.\par};
+\end{tikzpicture}
+\par\vspace{2mm}{\scriptsize\textcolor{gray}{Note that we made the numbers up for this example: this should not happen in a real study!}}
+\NoteRef{main/the-same-report-done-right}
+\end{frame}
+
+\section{Programming in R}
+\input{sections/04-r}
+
+\section{Reproducible Reports}
+\input{sections/05-quarto}
+
+\AtBeginSection{}
+\renewcommand\CurrentPart{0}
+\section*{Wrap-Up}
+\StartTiming{closing}
+\input{sections/06-closing}
+
+\EndTiming
+\appendix
+\renewcommand\RunningToc{}
+\input{sections/08-references}
+
+\section*{Code for Every Plot}
+% small line numbers, so that they do not compete with the code
+\xlstNumFs{\fontsize{4.5}{5}\selectfont}
+\input{sections/07-code}
+
+\section*{Tooling}
+\input{sections/09-tooling}
+
+\end{document}

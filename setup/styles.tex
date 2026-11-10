@@ -1,0 +1,1019 @@
+% Adelie, Chinstrap, Gentoo, plotblue, and Warn come from figures/theme.R
+\input{figures/out/colours.tex}
+\definecolor{BaseGray}{RGB}{66,66,66}
+\colorlet{SoftGray}{BaseGray!40}
+\colorlet{BackGray}{BaseGray!5}
+% code typeset by hand, colored like the listings: \Fn{function}, \Str{"string"}
+\newcommand\Fn[1]{\textcolor{codeFunction}{#1}}
+\newcommand\Str[1]{\textcolor{codeString}{#1}}
+
+% no hyphenation on slides, and ragged text in nodes with a width (TikZ would justify it)
+\AtBeginDocument{\hyphenpenalty=10000 \exhyphenpenalty=10000}
+\tikzset{
+   every picture/.append style={line cap=round,line join=round},
+   every node/.append style={align=left},
+   Soft/.style={line join=round,line cap=round},
+   RectRounding/.style={rounded corners=3pt},
+   Rect/.style={
+      draw=black,
+      rectangle,
+      RectRounding,
+      outer sep=2pt,
+      minimum size=1.8em,
+      fill=white,
+      drop shadow={fill=lightgray!50}
+   },
+   Card/.style={
+      Rect,
+      draw=SoftGray,
+      inner sep=6pt,
+      align=left,
+      execute at begin node={\hyphenpenalty=10000\exhyphenpenalty=10000}
+   },
+   Pill/.style={
+      draw=none,
+      fill=#1,
+      text=white,
+      rounded corners=1.5mm,
+      font=\scriptsize\sbseries,
+      inner xsep=4pt,
+      inner ysep=2pt,
+      % the same height, with or without descenders
+      text height=1.6ex,
+      text depth=.45ex
+   },
+   Pill/.default=BaseGray,
+   Link/.style={
+      draw,
+      Soft,
+      rounded corners=2.5pt,
+      -Kite
+   },
+   na/.style={midway,above,font=\scriptsize,align=center},
+   base@l/.style 2 args={edge node={node[na,#2]{#1}}},
+   l/.style={base@l={#1}{}},
+   lr/.style={base@l={#1}{right,align=left}},
+   ll/.style={base@l={#1}{left,align=right}},
+   lb/.style={base@l={#1}{below}},
+   Layer/.style={
+      draw=white,thick,fill opacity=.9,text opacity=1,
+      minimum width=42mm,minimum height=6mm,font=\small\sbseries,text=white,
+      xslant=.6,rounded corners=1pt
+   },
+   Out/.style={Pill,minimum width=16mm,font=\scriptsize\sbseries},
+   Plane/.style={fill=white,fill opacity=.82,draw=#1,thick,rounded corners=1pt},
+   LayerName/.style={font=\scriptsize\sbseries,anchor=base,text=#1},
+   LayerCode/.style={font=\tiny\ttfamily,anchor=north,gray,align=center},
+   LayerDot/.style={circle,inner sep=0pt,minimum size=2.4pt,fill=#1},
+   % layer n of the exploded plot: a plane seen from the side, the planes stand left to right
+   layer/.style={shift={(#1*\LayerGap,0)},x={(3.6mm,2.4mm)},y={(0,5.2mm)}},
+   bottom note/.style={font=\tiny,color=gray},
+   Note/.style={font=\scriptsize,color=gray,align=left},
+   Glow/.style={fill=#1!12,draw=#1,thick,rounded corners=2pt},
+   Glow/.default=plotblue,
+   Plot/.style={inner sep=2pt,outer sep=2pt,draw=SoftGray!45,rounded corners=3pt},
+   link node/.style 2 args={
+      alias=sourcenode,
+      append after command={
+         let \p1=(sourcenode.north west), \p2=(sourcenode.south east),
+             \n1={\x2-\x1}, \n2={\y1-\y2} in
+         node[inner sep=-.5\pgflinewidth,outer sep=0pt,anchor=center,at=(sourcenode.center)]
+            {#1{#2}{\phantom{\rule{\n1}{\n2}}}}
+      }
+   },
+   href node/.style={link node={\href}{#1}},
+   hyperlink node/.style={link node={\hyperlink}{#1}},
+}
+% \HistoryEvent{year}{y of its line}{1: label above, -1: below}{text}: an event on a timeline whose x unit is a year since 1975
+\newcommand\HistoryEvent[4]{%
+   \draw[history-event] ({#1-1975},#2) -- ++(.6,#3*.45) -- ++(.8,0)
+      node[history-box,fill=white,anchor=\ifnum#3>0 south west\else north west\fi,yshift=#3*-1.2mm] {\textsb{#1}: #4};}
+\def\LayerGap{19mm}
+% a rectangle in the coordinates of a plane (for the slanted layers, where rectangle would ignore the slant)
+\def\PlaneRect#1#2#3#4{({#1},{#2}) -- ({#3},{#2}) -- ({#3},{#4}) -- ({#1},{#4}) -- cycle}
+
+
+% \Source{text}: a note at the bottom of the frame, above the references cited on it
+\newcommand\Source[1]{\gappto\FrameSources{#1\par}}
+\def\FrameCites{}\def\FrameSources{}
+% printed and cleared by the footline, which is set after the body of each slide
+\newcount\CiteCount
+\def\CountCite#1{\advance\CiteCount 1\relax}
+\newcommand\FrameRefs{%
+   \ifboolexpr{test {\ifdefempty\FrameCites} and test {\ifdefempty\FrameSources}}{}{%
+      \FootCiteRoom=\dimexpr\paperwidth-18mm\relax\ifdefined\FrameHasPlot\advance\FootCiteRoom by -56mm\fi
+      \begin{tikzpicture}[overlay,remember picture]
+         \node[above right,xshift=9mm,yshift=5mm,bottom note,text width=\FootCiteRoom,align=left] at(current page.south west) {%
+            \rightskip 0pt plus 1fil\relax\FrameSources\ListingCitestrue\def\CiteSep{}%
+            \CiteCount=0 \forlistloop\CountCite\FrameCites
+            \ifnum\CiteCount<2 \forlistloop\FootCiteLongItem\FrameCites\else\forlistloop\FootCiteItem\FrameCites\fi};
+      \end{tikzpicture}}%
+   \gdef\FrameCites{}\gdef\FrameSources{}\global\let\FrameHasPlot\undefined}
+
+% \Qr[color]{height}{url}: one style for all codes; the gradient turns and darkens from code to code, so that a
+% row of codes is varied
+\newcounter{qr}
+\newcommand\Qr[3][plotblue]{%
+   \stepcounter{qr}%
+   \pgfmathtruncatemacro\QrAngle{135+90*mod(\value{qr}-1,4)}%
+   \pgfmathtruncatemacro\QrDark{55-12*mod(\value{qr}-1,3)}%
+   \begin{tabular}{@{}c@{}}
+      \fancyqr[style=rounded,finder=rounded,height=#2,l color=#1,r color=#1!\QrDark!black,gradient angle=\QrAngle]{#3}
+   \end{tabular}%
+}
+
+\newcommand\DefinePingu[3][.5]{%
+   \newsavebox#2%
+   \savebox#2{\scalebox{#1}{\tikz{\pingu[body type=legacy,#3]}}}%
+}
+
+% \PinguSays<overlay>{text}: a remark about the lecture itself, from a penguin in the lower right corner
+\DefinePingu[.28]\PinguTalk{eyes shiny,right wing wave}
+% a cast of penguins, so that every quiz and every part has its own (no caps: the legacy body turns them
+% into hoods): \UsePingu{cast}{n} sets \PinguBox
+% to the n-th outfit of the cast (counted from 1, wrapping around)
+\newsavebox\PinguBox
+\newcommand\PinguCast[2]{\csdef{pingu@cast@#1}{#2}}
+\PinguCast{quiz}{%
+   {conical hat=plotblue,staff right,eyes shiny,right wing wave},
+   {wool hat=Warn,lollipop right=Chinstrap,eyes wink,right wing wave},
+   {glasses,tie=plotblue,eyes shiny,right wing wave},
+   {hat=plotblue,monocle left,cane right,right wing wave},
+   {wool hat=Gentoo,flag right=plotblue,eyes wink,right wing wave},
+   {strawhat,flower right=Warn,eyes wink,right wing wave},
+   {headphone=plotblue,eyes shiny,right wing wave},
+   {sun glasses,bow tie=Warn,right wing wave}}
+\PinguCast{says}{%
+   {bow tie=plotblue,eyes shiny,right wing wave},
+   {tie=Warn,eyes wink,right wing wave},
+   {glasses round,eyes shiny,right wing wave},
+   {wool hat=plotblue,cup=Warn,wings grab,eyes shiny}}
+\PinguCast{takeaway}{%
+   {detective cap=plotblue,magnifier left,eyes shiny,left wing wave},
+   {hat=Warn,sheriff star,eyes wink,left wing wave},
+   {headphone=Warn,microphone right,eyes shiny,left wing wave},
+   {glasses,eyes shiny,laptop left,left wing wave},
+   {construction helmet,hammer left,pants=plotblue,left wing wave,eyes wink}}
+\makeatletter
+\newcount\cast@len \newcount\cast@idx
+\newcommand\UsePingu[3][.28]{%
+   \letcs\cast@list{pingu@cast@#2}%
+   \global\cast@len=0 \foreach \o in \cast@list {\global\advance\cast@len\@ne}%
+   % (n - 1) mod length + 1, \divide truncates
+   \cast@idx=\numexpr#3-1\relax \count@=\cast@idx \divide\count@\cast@len
+   \cast@idx=\numexpr\cast@idx-\count@*\cast@len+1\relax
+   \foreach \o [count=\i] in \cast@list {\ifnum\i=\cast@idx\xdef\cast@pick{\o}\fi}%
+   \edef\cast@draw{\noexpand\pingu[body type=legacy,\cast@pick]}%
+   \savebox\PinguBox{\scalebox{#1}{\tikz{\cast@draw}}}}
+\makeatother
+\newcounter{pingusays}
+\NewDocumentCommand\PinguSays{D<>{1-} m}{%
+   \stepcounter{pingusays}\UsePingu{says}{\thepingusays}%
+   \begin{tikzpicture}[overlay,remember picture]
+      \node[above left=10mm and 9mm,anchor=south east,inner sep=0pt,visible on=<#1>] (pingu) at(current page.south east) {\usebox\PinguBox};
+      \node[rectangle callout,callout absolute pointer={([xshift=1mm,yshift=-2mm]pingu.north west)},draw=SoftGray,fill=white,
+         rounded corners=3pt,font=\scriptsize\itshape,text width=40mm,align=left,inner sep=4pt,anchor=south east,visible on=<#1>]
+         at([xshift=-3mm,yshift=1mm]pingu.north west) {#2};
+   \end{tikzpicture}%
+}
+
+% \Takeaways{{first},{second},...}: the last frame of a part, in its color
+% \Takeaways{\Learning{icon}{headline}{detail} ...}: one card per learning, two per row
+\newcounter{learning}
+\newcommand\Learning[3]{%
+   \stepcounter{learning}%
+   \pgfmathsetmacro\LearningCol{mod(\value{learning}-1,2)}%
+   % an odd last card (\def\LearningLast{n}) sits in the middle of its row
+   \ifdefined\LearningLast\ifnum\value{learning}=\LearningLast\relax\ifodd\LearningLast\def\LearningCol{.5}\fi\fi\fi
+   \pgfmathtruncatemacro\LearningRow{div(\value{learning}-1,2)}%
+   \node[Card,draw=PartTint!45,anchor=north west,minimum width=58mm,minimum height=18mm,
+      visible on=<\thelearning->] (learning) at(\LearningCol*64mm,-\LearningRow*26mm) {};
+   \node[anchor=west,text width=46mm,inner sep=0pt,align=left,font=\footnotesize,visible on=<\thelearning->]
+      at([xshift=7mm]learning.west) {{\small\textsb{#2}}\\[.8mm]\textcolor{darkgray}{#3}};
+   \node[circle,fill=PartTint,text=white,minimum size=7.5mm,inner sep=0pt,font=\small,visible on=<\thelearning->]
+      at(learning.west) {\faicon{#1}};
+}
+\newcommand\ActivityPill[2]{\tikz[baseline=(p.base)]\node[Pill=PartTint,font=\small\sbseries,inner xsep=6pt,inner ysep=3pt](p){#1~#2};}
+% \MissionUrl{name}: the flowR playground link of the listing just typeset (magic-r keeps it per listing), also in
+% the log as MISSION-URL, so that the short link can point to it
+\newcommand\MissionUrl[1]{%
+   \ifcsname mr@pg@pg-\the\csname mr@lstid\endcsname\endcsname
+      \xdef\MissionPlayUrl{\csname mrPlaygroundUrl\endcsname\csname mr@hashchar\endcsname\csname mr@pg@pg-\the\csname mr@lstid\endcsname\endcsname}%
+   \else\xdef\MissionPlayUrl{\csname mrPlaygroundUrl\endcsname}\fi
+   \typeout{MISSION-URL #1 \MissionPlayUrl}}
+% \Mission{question}{\item step...}{tools}{minutes}{who}{template file}{tinyurl alias}: a live coding exercise;
+% the right card shows the template and opens it in the flowR playground, by QR code or a click on the short link
+\newcommand\Mission[7]{%
+   \begin{tikzpicture}
+      \node[Card,draw=PartTint,anchor=north west,text width=82mm,font=\small] (mission) at (0,0) {%
+         \textcolor{PartTint}{\textsb{\faFlagCheckered~Mission}}\\[1mm]{\large #1}\\[1mm]%
+         \begin{enumerate}\setlength\itemsep{.6ex}#2\end{enumerate}\vspace{1mm}
+         {\footnotesize\textcolor{gray}{Tools:}\enspace #3}};
+      \node[anchor=north west,inner sep=0pt] (time) at([yshift=-3mm]mission.south west) {\ActivityPill{\faClockO}{\qty{#4}{\minute}\Dot #5}};
+      \node[Card,anchor=north west,text width=44mm,align=center,font=\scriptsize] (start) at([xshift=5mm]mission.north east) {%
+         \textcolor{PartTint}{\textsb{\faPlayCircle~Start in the flowR playground}}\par
+         % the card title and the QR code already open the playground: no extra button beside the code
+         \raggedright\renewcommand\mrPlaceButton[1]{}\iR[frame=none,basicstyle=\fontsize{5.4}{6.4}\selectfont\ttfamily,numbers=none,aboveskip=1mm,belowskip=1mm]{#6}%
+         \MissionUrl{#7}\par\centering
+         \Qr[PartTint]{19mm}{https://tinyurl.com/#7}\\[.5mm]
+         \href{\MissionPlayUrl}{\textcolor{PartTint}{\textsb{tinyurl.com/#7}}}};
+   \end{tikzpicture}%
+}
+% \TalkGroup{task}{things to think of}{minutes}: a discussion in small groups
+\newcommand\TalkGroup[3]{%
+   \centering
+   \begin{tikzpicture}
+      \node[Card,draw=PartTint,text width=110mm,align=center,inner sep=10pt] (task) {%
+         {\Huge\textcolor{PartTint}{\faComments}}\\[3mm]{\Large #1}\\[3mm]\textcolor{darkgray}{Think of: #2}};
+      \node[below=5mm of task] {\ActivityPill{\faClockO}{\qty{#3}{\minute}\Dot groups of 3 to 4\Dot one writes, one reports}};
+   \end{tikzpicture}\par
+}
+% \PartSummary{\SummaryCard{icon}{title}{code}{what}...}: the whole part on one slide, six cards in two rows
+\newcounter{summarycol}
+\newcommand\PartSummary[1]{\setcounter{summarycol}{0}{\centering #1\par}}
+\newcommand\SummaryCard[4]{\stepcounter{summarycol}%
+   \begin{tikzpicture}[baseline=(current bounding box.north)]
+      \node[Card,draw=PartTint!60,anchor=north,text width=37mm,minimum height=27mm,align=left,font=\scriptsize] {%
+         {\small\textcolor{PartTint}{\csuse{fa#1}}~\textsb{#2}}\\[1mm]{\ttfamily #3}\\[1mm]\textcolor{darkgray}{#4}};
+   \end{tikzpicture}%
+   \ifnum\value{summarycol}=3 \setcounter{summarycol}{0}\par\vspace{2.5mm}\else\hspace{2.5mm}\fi}
+% \NextNote{text}: the speaker note of the next \Quiz or \Takeaways frame
+\newcommand\NextNote[1]{\gdef\PendingNote{#1}}
+% it is taken before the frame starts, so that every overlay of the frame shows it
+\newcommand\TakePendingNote{\global\let\FrameNote\PendingNote\global\let\PendingNote\undefined}
+\newcommand\UsePendingNote{\ifdefined\FrameNote\expandafter\note\expandafter{\FrameNote}\fi}
+\newcounter{takeaways}
+\newcommand\Takeaways[2][\csuse{part@\thesection @title}]{%
+   \stepcounter{takeaways}%
+   \TakePendingNote
+   \begin{frame}[c]{Takeaways: #1}
+      \UsePendingNote
+      \UsePingu[.36]{takeaway}{\thetakeaways}%
+      \setcounter{learning}{0}%
+      \centering
+      \begin{tikzpicture}[remember picture]
+         #2
+         % an overlay in the lower right, so that the cards alone are centered
+         \node[overlay,anchor=south east,inner sep=0pt] at([shift={(-5mm,8mm)}]current page.south east) {\usebox\PinguBox};
+      \end{tikzpicture}
+   \end{frame}%
+}
+
+\tikzset{
+   invisible/.style={opacity=0,text opacity=0,every shadow/.style={opacity=0}},
+   alt/.code args={<#1>#2#3}{\alt<#1>{\pgfkeysalso{#2}}{\pgfkeysalso{#3}}},
+   visible on/.style={alt={#1{}{invisible}}},
+}
+\pgfplotsset{
+   discard if not/.style 2 args={
+      x filter/.append code={
+         \edef\tempa{\thisrow{#1}}%
+         \edef\tempb{#2}%
+         \ifx\tempa\tempb\else\def\pgfmathresult{inf}\fi
+      }
+   },
+   lecture axis/.style={
+      axis lines=left,
+      axis line style={SoftGray,-},
+      tick style={SoftGray},
+      tick label style={font=\tiny,color=gray},
+      label style={font=\scriptsize},
+      title style={font=\scriptsize\sbseries,yshift=-1.5mm},
+   },
+}
+
+
+% \RoundBars[plot options]{axis base}{coordinates}: ybar bars rounded only at their top; a square
+% copy up to half the height covers the rounded corners at the base (ymin, if the axis is cut)
+\newcommand\RoundBars[3][]{%
+   \addplot[draw=none,bar shift=0pt,rounded corners=2pt,#1] coordinates {#3};
+   \addplot[draw=none,bar shift=0pt,nodes near coords={},y filter/.expression={(y+#2)/2},forget plot,#1] coordinates {#3};}
+\newcommand<>\Reveal[1]{\alt#2{#1}{\phantom{#1}}}
+
+\def\PartCount{4}
+% the parts: \DefinePart{number}{colour}{icon}{title}{topics}{teaser}
+\newcommand\DefinePart[6]{%
+   \csdef{part@#1@colour}{#2}\csdef{part@#1@icon}{#3}\csdef{part@#1@title}{#4}%
+   \csdef{part@#1@topics}{#5}\csdef{part@#1@teaser}{#6}%
+}
+% the chapters of a long part: \DefineChapter{part}{number}{title}{topics}{teaser}
+\newcommand\DefineChapter[5]{%
+   \csdef{chapter@#1@#2@title}{#3}\csdef{chapter@#1@#2@topics}{#4}\csdef{chapter@#1@#2@teaser}{#5}%
+   \ifcsname chapter@#1@count\endcsname\ifnum\csuse{chapter@#1@count}<#2\relax\csdef{chapter@#1@count}{#2}\fi
+   \else\csdef{chapter@#1@count}{#2}\fi
+}
+\def\Dot{\enspace\textperiodcentered\enspace}
+% the parts go from a muted institute red (the title bar is A32638) to a muted purple
+\definecolor{PartOne}{HTML}{94364A}
+\definecolor{PartTwo}{HTML}{823959}
+\definecolor{PartThree}{HTML}{693A69}
+\definecolor{PartFour}{HTML}{58396E}
+\DefinePart{0}{accent}{}{}{}{}
+\DefinePart{1}{PartOne}{\faSearch}{Exploring Data}{Workflow\Dot cleaning\Dot summaries\Dot distributions}
+   {Why do you look at the data before you compute anything?}
+\DefinePart{2}{PartTwo}{\faBalanceScale}{Testing and Communicating}{Tests\Dot many tests\Dot charts\Dot honest numbers}
+   {Is the effect real, and how do you show it honestly?}
+\DefinePart{3}{PartThree}{\faCode}{Programming in R}{Primer\Dot ggplot2\Dot models\Dot Shiny}
+   {How do you get from a data frame to a test and a plot?}
+\DefinePart{4}{PartFour}{\faBook}{Reproducible Reports}{Literate programming\Dot Quarto\Dot reproducibility}
+   {How many notebooks on GitHub still run, and do yours?}
+\DefineChapter{1}{1}{Workflow}{Messy data\Dot cleaning\Dot scales of measurement}
+   {What should you look at before you compute anything?}
+\DefineChapter{1}{2}{Summaries}{Mean and median\Dot variance\Dot boxplot}
+   {One typo turns a 6 into a 26: which summary survives?}
+\DefineChapter{1}{3}{Shapes and Groups}{Exploring\Dot histograms\Dot shapes\Dot Simpson's paradox}
+   {Can a trend point down overall but up in every group?}
+\DefineChapter{2}{1}{Testing}{Hypotheses\Dot \(p\)-values\Dot errors\Dot choosing a test}
+   {How often does a \qty{95}{\percent} confidence interval miss?}
+\DefineChapter{2}{2}{Tests in Practice}{Multiple testing\Dot forking paths\Dot benchmarks}
+   {Test 20 colors of jelly beans: how likely is a false hit?}
+\DefineChapter{2}{3}{Charts}{Encodings\Dot overplotting\Dot color scales}
+   {Why is the rainbow a poor color scale?}
+\DefineChapter{2}{4}{Honest Numbers}{What is counted\Dot axes and ratios\Dot tables}
+   {How do you make trains more punctual without changing a train?}
+% The timetable of the two lectures, in lecture order: parts 1 and 2 in the first, parts 3 and 4 in the second. Each chapter (or part without chapters) gets its minutes once:
+% the parts and lectures add them up, and each slide gets its share of the chapter from the number of frames in it.
+\newcount\TimingElapsed
+\def\TimingLecture{0}
+\newcommand\TimeSegment[3]{%
+   \ifnum#2=\TimingLecture\relax\else\global\TimingElapsed=0 \gdef\TimingLecture{#2}\fi
+   \csxdef{timing@lecture@#1}{#2}\csxdef{timing@minutes@#1}{#3}\csxdef{timing@before@#1}{\the\TimingElapsed}%
+   \global\advance\TimingElapsed#3\relax
+   \csxdef{timing@total@#2}{\the\TimingElapsed}%
+}
+\newcommand\TimingAddToPart[3]{%
+   \ifcsname timing@part@#1@minutes\endcsname\else\csgdef{timing@part@#1@minutes}{0}\csxdef{timing@part@#1@first}{#2}\fi
+   \csxdef{timing@part@#1@minutes}{\the\numexpr\csuse{timing@part@#1@minutes}+#3\relax}%
+   \csxdef{timing@part@#1@last}{#2}%
+}
+% \TimeChapter{part}{chapter}{lecture}{minutes} and \TimePart{part}{lecture}{minutes}, for a part without chapters
+\newcommand\TimeChapter[4]{\TimeSegment{#1.#2}{#3}{#4}\TimingAddToPart{#1}{#3}{#4}}
+\newcommand\TimePart[3]{\TimeSegment{#1}{#2}{#3}\TimingAddToPart{#1}{#2}{#3}}
+\TimeSegment{intro}{1}{4}
+\TimeChapter{1}{1}{1}{8}\TimeChapter{1}{2}{1}{7}\TimeChapter{1}{3}{1}{10}
+\TimeChapter{2}{1}{1}{18}\TimeChapter{2}{2}{1}{16}\TimeChapter{2}{3}{1}{14}\TimeChapter{2}{4}{1}{13}
+% lecture 2 as presented, the optional frames left out; the activities get their own minutes
+\TimeSegment{talk1}{2}{5}\TimeSegment{talk1a}{2}{2}
+\TimePart{3}{2}{14}\TimeChapter{3}{code1}{2}{10}\TimeChapter{3}{code1a}{2}{2}\TimeChapter{3}{b}{2}{8}
+\TimeChapter{3}{talk2}{2}{5}\TimeChapter{3}{talk2a}{2}{2}\TimeChapter{3}{c}{2}{3}
+\TimeChapter{3}{code2}{2}{10}\TimeChapter{3}{code2a}{2}{2}\TimeChapter{3}{d}{2}{3}
+\TimePart{4}{2}{24}
+\TimeSegment{closing}{2}{2}
+% for the note pages only: the slides never show minutes
+\colorlet{LectureColour1}{PartOne}
+\colorlet{LectureColour2}{PartFour}
+\newcommand\LectureTag[1]{\textcolor{LectureColour#1}{\sbseries Lecture #1}}
+\newcommand\TimingStrong[1]{\textcolor{black}{\sbseries #1}}
+% \StartTiming{key} marks where a segment begins; the aux file tells the next run how many frames each one has
+\let\TimingKey\relax
+\makeatletter
+\newcommand\TimingWrite[1]{\immediate\write\@auxout{\string\TimingSeen{#1}{\the\c@framenumber}}}
+\newcommand\StartTiming[1]{\xdef\TimingKey{#1}\TimingWrite{\TimingKey}}
+\newcommand\EndTiming{\global\let\TimingKey\relax\TimingWrite{end}}
+\newcommand\TimingSeen[2]{%
+   \ifdefined\TimingPrevious
+      \csxdef{timing@frames@\TimingPrevious}{\the\numexpr#2-\csuse{timing@first@\TimingPrevious}\relax}%
+   \fi
+   \csxdef{timing@first@#1}{#2}\xdef\TimingPrevious{#1}%
+}
+% \SlideTiming: fills \TimingLong, the timing of the current frame on its note page
+\newcommand\SlideTiming{%
+   \global\let\TimingLong\@empty
+   \unless\ifx\TimingKey\relax\ifcsname timing@frames@\TimingKey\endcsname
+   \ifnum\csuse{timing@frames@\TimingKey}>0 
+      \edef\TimingMinutes{\csuse{timing@minutes@\TimingKey}}%
+      \edef\TimingFrames{\csuse{timing@frames@\TimingKey}}%
+      \edef\TimingNumber{\csuse{timing@lecture@\TimingKey}}%
+      % whole minutes, each slide the difference of two rounded sums, so that they add up exactly
+      \edef\TimingCum{\fpeval{round(\csuse{timing@before@\TimingKey}
+         +\TimingMinutes*(\the\c@framenumber-\csuse{timing@first@\TimingKey})/\TimingFrames,0)}}%
+      \edef\TimingStart{\fpeval{round(\csuse{timing@before@\TimingKey}
+         +\TimingMinutes*(\the\c@framenumber-\csuse{timing@first@\TimingKey}-1)/\TimingFrames,0)}}%
+      \edef\TimingTotal{\csuse{timing@total@\TimingNumber}}%
+      \ifdefined\SlideTimingDivider
+         \xdef\TimingLong{minute \noexpand\TimingStrong{\TimingCum} of \TimingTotal\noexpand\Dot\noexpand\LectureTag{\TimingNumber}}%
+      \else
+         \edef\TimingPer{\the\numexpr\TimingCum-\TimingStart\relax}%
+         \xdef\TimingLong{minute \noexpand\TimingStrong{\TimingCum} of \TimingTotal\noexpand\Dot this slide \noexpand\TimingStrong{\noexpand\qty{\TimingPer}{\noexpand\minute}}\noexpand\Dot\noexpand\LectureTag{\TimingNumber}}%
+      \fi
+   \fi\fi\fi
+   \global\let\SlideTimingDivider\undefined
+}
+\makeatother
+\def\PartColour#1{\csuse{part@#1@colour}}
+% the color of the current part, for drawings that belong to it
+\colorlet{PartTint}{plotblue}
+% the part of the current frame, 0 outside of the parts
+\newcommand\CurrentPart{\arabic{section}}
+
+% \Tutorial{url}{text}: a small link to read on, in the corner of the R code link (not for frames with \PlotCode)
+\newcommand\Tutorial[2]{%
+   \begin{tikzpicture}[overlay,remember picture]
+      \node[above left,xshift=-9mm,yshift=5mm,font=\scriptsize\sbseries,inner sep=1pt] at(current page.south east)
+         {\href{#1}{\textcolor{PartTint}{\faBook~#2}}};
+   \end{tikzpicture}%
+}
+% the same on the left, for a frame with a penguin in that corner and no citations
+\newcommand\TutorialLeft[2]{%
+   \begin{tikzpicture}[overlay,remember picture]
+      \node[above right,xshift=9mm,yshift=5mm,font=\scriptsize\sbseries,inner sep=1pt] at(current page.south west)
+         {\href{#1}{\textcolor{PartTint}{\faBook~#2}}};
+   \end{tikzpicture}%
+}
+% \OutlineBack{target}: a small link up to the bigger outline, in the corner opposite of the R code link; only in the
+% versions to read, since the animated one is presented in order
+% \SeeLater{target}{where}: a small gray link from an early overview to the slides that return to it, only in the
+% versions to read. The target is a \hypertarget in that frame.
+\newcommand\SeeLater[2]{\unless\ifdefined\LectureAnimated\\[-.5mm]\hyperlink{#1}{\textcolor{gray}{\tiny\mdseries #2}}\fi}
+% \Stage[shift]{step}: a tiny sketch of Wickham's workflow with its loop in the top right corner, the current step highlighted.
+% On a frame with a portrait the shift moves it to the left of that portrait.
+% a slide can belong to several steps: \Stage{Model,Communicate}
+\ExplSyntaxOn
+\NewDocumentCommand\StageItem{mm}{\clist_if_in:nnTF{#1}{#2}{\textcolor{PartTint}{\sbseries #2}}{\textcolor{gray!70}{#2}}}
+\ExplSyntaxOff
+\NewDocumentCommand\Stage{O{0mm} m}{%
+   \begin{tikzpicture}[overlay,remember picture,
+      StageStep/.style={inner sep=.4pt,font=\fontsize{5}{6}\selectfont,text height=1.5mm,text depth=.3mm},
+      StageFlow/.style={-{Kite[length=.9mm,width=.75mm]},gray!70,line width=.25pt,rounded corners=.5mm},
+   ]
+      % equal gaps between all steps: \StageGap for each arrow, the box only as wide as its content
+      \def\StageGap{2.4mm}
+      \node[StageStep,anchor=east] (st-c) at([shift={(-3mm-#1,-4mm)}]current page.north east) {\StageItem{#2}{Communicate}};
+      \node[StageStep,anchor=east] (st-v) at([shift={(-\StageGap-.5mm,2.2mm)}]st-c.west) {\StageItem{#2}{Visualize}};
+      \node[StageStep] (st-m) at([yshift=-4.4mm]st-v.center) {\StageItem{#2}{Model}};
+      \node[StageStep,anchor=east] (st-t) at([xshift=-1.4mm]st-v.west|-st-c) {\StageItem{#2}{Transform}};
+      \node[fit=(st-t)(st-v)(st-m),draw=gray!45,densely dotted,line width=.25pt,rounded corners=.6mm,inner xsep=.5mm,inner ysep=.2mm] (st-u) {};
+      \node[StageStep,anchor=east] (st-y) at([xshift=-\StageGap]st-u.west|-st-c) {\StageItem{#2}{Tidy}};
+      \node[StageStep,anchor=east] (st-i) at([xshift=-\StageGap]st-y.west) {\StageItem{#2}{Import}};
+      \draw[StageFlow] (st-i) -- (st-y);
+      \draw[StageFlow] (st-y) -- (st-u.west|-st-y);
+      \draw[StageFlow] ([xshift=1mm]st-t.north) |- (st-v.west);
+      \draw[StageFlow] (st-v.south) -- (st-m.north);
+      \draw[StageFlow] (st-m.west) -| ([xshift=1mm]st-t.south);
+      \draw[StageFlow] (st-u.east|-st-c) -- (st-c.west);
+   \end{tikzpicture}%
+}
+\newcommand\OutlineBack[1]{\unless\ifdefined\LectureAnimated
+   \node[overlay,above right,xshift=9mm,yshift=5mm,font=\tiny,inner sep=1pt] at(current page.south west)
+      {\hyperlink{#1}{\textcolor{gray}{\faLevelUp~back to the overview}}};
+\fi}
+% \Roadmap{n}: the parts as a staircase, part n highlighted (0: all, revealed one by one)
+\newsavebox\RoadmapPingu
+\savebox\RoadmapPingu{\scalebox{.32}{\tikz{\pingu[body type=legacy,eyes shiny,signpost right,signpost right color=plotblue]}}}
+\newcommand\Roadmap[1]{%
+   \begin{tikzpicture}[remember picture,
+      Part/.style={Card,anchor=north west,text width=76mm,minimum height=12.5mm,inner xsep=8pt},
+      Faded/.style={draw=SoftGray!50,text opacity=.5},
+      Current/.style={draw=##1,very thick},
+   ]
+      \foreach \i in {1,...,\PartCount} {
+         \edef\colour{\PartColour{\i}}
+         \ifnum#1=0
+            \tikzset{state/.style={visible on=<\i->}}
+         \else\ifnum#1=\i
+            \tikzset{state/.style={Current=\colour}}
+         \else
+            \tikzset{state/.style={Faded}}
+         \fi\fi
+         \node[Part,state,hyperlink node=part-\i] (part-\i) at ({(\i-1)*6mm},{-(\i-1)*15.5mm}) {%
+            \parbox[c]{9mm}{\centering\LARGE\color{\colour}\csuse{part@\i@icon}}\hspace{3mm}%
+            \parbox[c]{64mm}{\raggedright\linespread{1}\selectfont
+               \ifnum#1=\i
+                  {\normalsize\sbseries\textcolor{\colour}{\i.~\csuse{part@\i@title}}}\\[.6mm]
+                  {\scriptsize\color{\colour}\csuse{part@\i@topics}}%
+               \else
+                  {\normalsize\sbseries\textcolor{\colour}{\i.}~\csuse{part@\i@title}}\\[.6mm]
+                  {\scriptsize\color{darkgray}\csuse{part@\i@topics}}%
+               \fi}};
+      }
+      \ifnum#1>0
+      \edef\colour{\PartColour{#1}}
+      \node[Card,draw=\colour,anchor=north west,text width=33mm,font=\small\itshape,align=left]
+         (teaser) at([xshift=8mm]part-\PartCount.east |- part-1.north) {\csuse{part@#1@teaser}};
+      \node[below=1mm,inner sep=0pt] at(teaser.south) {\usebox\RoadmapPingu};
+      \OutlineBack{outline}
+      \fi
+   \end{tikzpicture}%
+}
+
+% \Chapter{n}: a divider frame for chapter n of the current part, with all its chapters (n highlighted)
+\newcommand\Chapter[1]{%
+   \subsection{\csuse{chapter@\thesection @#1@title}}%
+   \StartTiming{\thesection.#1}%
+   \begin{frame}[c,noframenumbering]{Outline}
+      \gdef\SlideTimingDivider{}\NoteTimetable
+      \hypertarget{chapter-\thesection-#1}{}%
+      \centering
+      \begin{tikzpicture}[remember picture,
+         Chap/.style={Card,anchor=north west,text width=71mm,minimum height=11mm,inner xsep=8pt},
+         Faded/.style={draw=SoftGray!50,text opacity=.5},
+      ]
+         \edef\colour{\PartColour{\thesection}}
+         % the same box for every chapter of the part: the teaser moves with the current chapter, and a box that
+         % followed it would move the centered picture, and so the cards, from one chapter to the next
+         \pgfmathsetmacro\ChapLast{\csuse{chapter@\thesection @count}-1}
+         \path[use as bounding box] (-1mm,14mm) rectangle ({\ChapLast*5mm+135mm},{-\ChapLast*14mm-16mm});
+         \node[anchor=south west,inner sep=0pt,hyperlink node=part-\thesection] at(0,4mm) {%
+            {\Large\color{\colour}\csuse{part@\thesection @icon}}\hspace{3mm}%
+            {\large\sbseries\textcolor{\colour}{\thesection.}~\csuse{part@\thesection @title}}};
+         % the chapters as a list, the current one highlighted
+         \foreach \c in {1,...,\csuse{chapter@\thesection @count}} {
+            \ifnum\c=#1\relax\tikzset{state/.style={draw=\colour,very thick}}\else\tikzset{state/.style={Faded}}\fi
+            \node[Chap,state,hyperlink node=chapter-\thesection-\c] (chap-\c) at({(\c-1)*5mm},{-(\c-1)*14mm}) {%
+               \parbox[c]{9mm}{\normalsize\sbseries\color{\colour}\thesection.\c}%
+               \parbox[c]{62mm}{\raggedright{\normalsize\sbseries\csuse{chapter@\thesection @\c @title}}\\[.4mm]
+                  {\scriptsize\color{darkgray}\csuse{chapter@\thesection @\c @topics}\par}}};
+         }
+         % the question of the current chapter, beside its card
+         \node[Card,draw=\colour,anchor=west,text width=36mm,font=\small\itshape,align=left]
+            (teaser) at([xshift=8mm]chap-#1.east) {\csuse{chapter@\thesection @#1@teaser}};
+         \node[above=-1mm,inner sep=0pt] at(teaser.north) {\usebox\RoadmapPingu};
+         \OutlineBack{part-\thesection}
+      \end{tikzpicture}
+   \end{frame}%
+}
+
+% the footer: author, the parts (the current one in bold, all linked), and the page number
+\newcommand\RunningToc{%
+   \foreach \i in {1,...,\PartCount} {%
+      \hyperlink{part-\i}{\ifnum\i=\CurrentPart\relax\textcolor{white}{\sbseries\csuse{part@\i@title}}%
+         \else\textcolor{white!65!accent}{\csuse{part@\i@title}}\fi}%
+      \ifnum\i<\PartCount\relax\hspace{4mm}\fi
+   }%
+}
+\setbeamercolor{mypagenumber}{fg=white,bg=accent}
+\makeatletter
+% only the second and later pages of a long code frame say so
+\setbeamertemplate{frametitle continuation}[from second][(cont.)]
+\setbeamertemplate{footline}{%
+   \FrameRefs
+   \hbox{%
+      \begin{beamercolorbox}[wd=.93\textwidth,ht=3mm,dp=1.5mm,left]{myfooter}%
+         \hspace{.03\textwidth}\SlideTiming\insertshortauthor\hfill\RunningToc\hspace{.03\textwidth}%
+      \end{beamercolorbox}%
+      \ifnum\CurrentPart>\PartCount\relax\else\setbeamercolor{mypagenumber}{fg=white,bg=\PartColour{\CurrentPart}}\fi
+      \begin{beamercolorbox}[wd=.07\textwidth,ht=3mm,dp=1.5mm,center]{mypagenumber}%
+         \usebeamerfont{page number in head/foot}\fancy@page
+      \end{beamercolorbox}%
+   }%
+}
+
+% \PlotCode{key}: the frame shows a plot made by figures/<key>.R. A link opens that script in flowR's
+% playground, a second one its frame in the appendix, which is generated at the end of the document.
+\newcommand\PlotPlay[2]{\csgdef{plot@play@#1}{#2}}
+\newcommand\PlayLink[2]{%
+   \ifcsname mr@pg@pg-\csuse{plot@play@#1}\endcsname
+      \edef\@tempa{\noexpand\href{\mrPlaygroundUrl\mr@hashchar\csname mr@pg@pg-\csuse{plot@play@#1}\endcsname}}%
+      \@tempa{#2}%
+   \else#2\fi
+}
+\newcommand\PlotCode[1]{%
+   \gdef\FrameHasPlot{}%
+   \ifinlist{#1}\PlotKeys{}{%
+      \listgadd\PlotKeys{#1}%
+      \protected@csxdef{plot@title@#1}{\insertframetitle}%
+   }%
+   \begin{tikzpicture}[overlay,remember picture]
+      \node[above left,xshift=-9mm,yshift=5mm,font=\scriptsize\sbseries,text=PartTint,inner sep=1pt] at(current page.south east)
+         {\PlayLink{#1}{\textcolor{PartTint}{\faPlayCircle~R code}}\hspace{2mm}\hyperlink{code-#1}{\textcolor{gray}{\faFileCodeO~appendix}}};
+   \end{tikzpicture}%
+}
+% \PlotListing{key}: after the listing of figures/<key>.R, so that \PlotCode can link to its playground
+\newcommand\PlotListing[1]{\immediate\write\@auxout{\string\PlotPlay{#1}{\the\mr@lstid}}}
+\def\PlotKeys{}
+\newwrite\CodeFrames
+\newread\CodeLines
+\newcount\CodeLineCount
+\newcount\CodeWidth
+% \CodeLineLength\macro: keep the longest line (in characters) in \CodeWidth
+\ExplSyntaxOn
+\cs_new_protected:Npn \CodeLineLength #1
+  { \int_compare:nNnT { \str_count:N #1 } > { \CodeWidth } { \global \CodeWidth = \str_count:N #1 \scan_stop: } }
+\ExplSyntaxOff
+% \CountCodeLines{file}: its number of lines in \CodeLineCount (its widest in \CodeWidth), the empty ones marked in code@blank@<line>
+\newcommand\CountCodeLines[1]{%
+   \CodeLineCount=0 \global\CodeWidth=0 \openin\CodeLines=#1
+   \begingroup\endlinechar=-1
+   \loop\unless\ifeof\CodeLines
+      \readline\CodeLines to\@tempa
+      \ifeof\CodeLines\else
+         \global\advance\CodeLineCount\@ne
+         \CodeLineLength\@tempa
+         \ifx\@tempa\@empty\csgdef{code@blank@\the\CodeLineCount}{1}\else\csgdef{code@blank@\the\CodeLineCount}{0}\fi
+      \fi
+   \repeat
+   \endgroup
+   \closein\CodeLines
+}
+% long or wide scripts in \tiny
+\newcommand\CodeSize[1]{%
+   \CountCodeLines{#1}%
+   \ifnum\CodeLineCount>18 \tiny\else\ifnum\CodeWidth>84 \tiny\else\scriptsize\fi\fi
+}
+\AtEndDocument{%
+   \immediate\openout\CodeFrames=\jobname-code.tex
+   \forlistloop{\IfCodeFile}\PlotKeys
+   \immediate\closeout\CodeFrames
+}
+% a fragile frame ends at a line that is exactly \end{frame} (\write would add a space after \end)
+\edef\EndFrameLine{\expandafter\@gobble\string\\end\string{frame\string}}
+\newcommand\IfCodeFile[1]{\IfFileExists{figures/#1.R}{\WriteCodeFrame{#1}}{}}
+% a script longer than \CodePageLines lines is split into frames of about the same length, each at an
+% empty line where possible
+\def\CodePageLines{28}
+\newcount\CodeFrom \newcount\CodeTo \newcount\CodePages \newcount\CodeTarget
+\newcommand\WriteCodeFrame[1]{%
+   \CountCodeLines{figures/#1.R}%
+   % \divide truncates, \numexpr would round
+   \CodePages=\numexpr\CodeLineCount+\CodePageLines-1\relax \divide\CodePages\CodePageLines
+   \CodeTarget=\numexpr\CodeLineCount+\CodePages-1\relax \divide\CodeTarget\CodePages
+   \CodeFrom=1
+   \loop
+      \ifnum\numexpr\CodeLineCount-\CodeFrom+1>\CodePageLines\relax
+         % the empty line closest to an even split, else an even split
+         \CodeTo=\numexpr\CodeFrom+\CodeTarget-1\relax
+         \@tempcnta=0
+         \@whilenum\@tempcnta<12\do{%
+            \@tempcntb=\numexpr\CodeFrom+\CodeTarget-1+\@tempcnta\relax
+            \ifnum\@tempcntb<\numexpr\CodeFrom+\CodePageLines\relax\ifnum0\csuse{code@blank@\the\@tempcntb}=1 \CodeTo=\@tempcntb \@tempcnta=12 \fi\fi
+            \ifnum\@tempcnta<12 \@tempcntb=\numexpr\CodeFrom+\CodeTarget-1-\@tempcnta\relax
+               \ifnum0\csuse{code@blank@\the\@tempcntb}=1 \CodeTo=\@tempcntb \@tempcnta=12 \fi\fi
+            \advance\@tempcnta\@ne}%
+      \else
+         \CodeTo=\CodeLineCount
+      \fi
+      \WriteCodePage{#1}%
+      \CodeFrom=\numexpr\CodeTo+1\relax
+   \ifnum\CodeFrom<\numexpr\CodeLineCount+1\relax\repeat
+}
+\newcount\CodeSplit
+% a script split over several code pages: its button opens the whole script, a chunk alone would not run
+\newcommand\CodePlayAll[1]{%
+   \begin{tikzpicture}[overlay,remember picture]
+      \node[above left,xshift=-9mm,yshift=5mm,font=\scriptsize\sbseries,inner sep=1pt] at(current page.south east)
+         {\PlayLink{#1}{\textcolor{plotblue}{\faPlayCircle~whole script}}};
+   \end{tikzpicture}%
+}
+\newcommand\WriteCodePage[1]{%
+   \CodeSplit=0 \ifnum\CodeFrom>1 \CodeSplit=1 \fi \ifnum\CodeTo<\CodeLineCount \CodeSplit=1 \fi
+   \immediate\write\CodeFrames{\unexpanded{\begin{frame}}[fragile,t\ifnum\CodeFrom=1 ,label=code-#1\fi]{\unexpanded{\hyperlink}{plot-#1}{\unexpanded{\textcolor{plotblue}{\faArrowCircleLeft}~}Code: \csuse{plot@title@#1}\ifnum\CodeFrom>1 \space(cont.)\fi}}}%
+   \immediate\write\CodeFrames{\unexpanded{\CodeSize}{figures/#1.R}\unexpanded{\iR[frame=none,mrsource={figures/theme.R},}\ifnum\CodeSplit=1 mrplayground=false,\fi mrscope=#1,firstline=\the\CodeFrom,lastline=\the\CodeTo,firstnumber=\the\CodeFrom]{figures/#1.R}}%
+   \ifnum\CodeSplit=1 \immediate\write\CodeFrames{\unexpanded{\CodePlayAll}{#1}}\fi%
+   \ifnum\CodeFrom=1
+      % the playground link of the plot opens the whole script: a listing of it that is never shown
+      \ifnum\CodeTo<\CodeLineCount
+         \immediate\write\CodeFrames{\unexpanded{\setbox0\vbox\bgroup\iR[frame=none,mrsource={figures/theme.R},}mrscope=#1]{figures/#1.R}\unexpanded{\egroup}}%
+      \fi
+      \immediate\write\CodeFrames{\unexpanded{\PlotListing}{#1}}%
+   \fi
+   \immediate\write\CodeFrames{\EndFrameLine}%
+}
+\makeatother
+
+% the faded portraits of the sqa-static-analysis slides
+\tikzfading[name=rectangular fade,inner color=transparent!0,middle color=transparent!0,outer color=transparent!100]
+% \Person{key}{name}{years}{file}{credit}{url}{x/y/size}: x and y locate the face in the image, size is
+% the width of the visible part, all as fractions of the image (see setup/people.tex)
+\newcommand\Person[7]{%
+   \csdef{person@#1@name}{#2}%
+   \csdef{person@#1@years}{#3}%
+   \csdef{person@#1@file}{#4}%
+   \csdef{person@#1@credit}{#5}%
+   \csdef{person@#1@url}{#6}%
+   \csdef{person@#1@face}{#7}%
+}
+% \FlipPerson{key}: mirror the portrait, so that the face looks into the frame (to the left)
+\newcommand\FlipPerson[1]{\csdef{person@#1@flip}{}}
+% \PersonRole{key}{text}: what the person has to do with the slide, a line below the years
+\newcommand\PersonRole[2]{\csdef{person@#1@role}{#2}}
+\newsavebox\PortraitImage
+\newlength\PortraitWidth
+\def\PortraitFace#1/#2/#3\relax{\def\FaceX{#1}\def\FaceY{#2}\def\FaceSize{#3}}
+% \ShowPerson[width]{key}<overlay>[shift to the left]: the face in the upper right corner, faded at its
+% edges, with name and credit to its left
+\NewDocumentCommand\ShowPerson{O{10mm} m D<>{1-} O{0mm}}{%
+   \ifcsdef{person@#2@file}{%
+      \expandafter\expandafter\expandafter\PortraitFace\csname person@#2@face\endcsname\relax
+      \setlength\PortraitWidth{#1}%
+      \pgfmathsetlengthmacro\ImageWidth{\PortraitWidth/\FaceSize}%
+      \savebox\PortraitImage{\includegraphics[width=\ImageWidth]{\csuse{person@#2@file}}}%
+      \ifcsdef{person@#2@flip}{\savebox\PortraitImage{\reflectbox{\usebox\PortraitImage}}\pgfmathsetmacro\FaceX{1-\FaceX}}{}%
+      % enlarge tight crops until they cover the frame, then keep the face centered as far as the image allows
+      \pgfmathsetmacro\PortraitCover{max(1,\PortraitWidth/\the\wd\PortraitImage,1.25*\PortraitWidth/\the\ht\PortraitImage)}%
+      \savebox\PortraitImage{\scalebox{\PortraitCover}{\usebox\PortraitImage}}%
+      \pgfmathsetlengthmacro\FaceShiftX{min(0,max(\PortraitWidth-\the\wd\PortraitImage,.5*\PortraitWidth-\FaceX*\the\wd\PortraitImage))}%
+      \pgfmathsetlengthmacro\FaceShiftY{max(0,min(\the\ht\PortraitImage-1.25*\PortraitWidth,\FaceY*\the\ht\PortraitImage-.625*\PortraitWidth))}%
+      \begin{tikzpicture}[overlay,remember picture]
+         \coordinate (face) at([shift={(-2.5mm-#4,-2.5mm)}]current page.north east);
+         \begin{scope}[visible on=<#3>]
+            \coordinate (face south west) at([shift={(-\PortraitWidth,-1.25\PortraitWidth)}]face);
+            \foreach \o in {1,.5}
+               \path[path picture={\node[inner sep=0pt,anchor=north west]
+                     at([shift={(\FaceShiftX,\FaceShiftY)}]path picture bounding box.north west) {\usebox\PortraitImage};},
+                  rounded corners=8pt,path fading=rectangular fade,draw,thin,white,opacity=\o]
+                  (face south west) rectangle (face);
+            \node[anchor=south east,align=right,font=\tiny,inner sep=0pt]
+               at([shift={(-\PortraitWidth-2mm,-1.25\PortraitWidth)}]face) {%
+               \textsb{\csuse{person@#2@name}}\\\csuse{person@#2@years}\\\ifcsdef{person@#2@role}{\csuse{person@#2@role}\\}{}%
+               \color{gray}\href{\csuse{person@#2@url}}{\csuse{person@#2@credit}}};
+         \end{scope}
+      \end{tikzpicture}%
+   }{}%
+}
+\input{setup/people.tex}
+
+% \Quiz{title}{question}{A}{B}{C}{D}{correct letter}{explanation}: click an answer to select it, 50:50 hides two
+% wrong ones, the lock reveals the right one (PDF layers, so it works in a single page and in print).
+% With \LectureNoSolutions (r-statistics-nosolutions.tex) only the answers remain.
+% the quiz takes the color of its part; the right answer is filled darker than a selected one
+\tikzset{
+   % a quiz show: rounded boxes with a dark outline, tinted at the sides and light in the middle;
+   % orange when locked in, green when right
+   QuizBox/.style={
+      rectangle,rounded corners=4mm,
+      draw=PartTint!65!black,line width=.7pt,left color=PartTint!24,right color=PartTint!24,middle color=PartTint!3,text=black,
+      minimum height=9mm,align=left,font=\small
+   },
+   QuizAnswer/.style={QuizBox,left color=PartTint!13,right color=PartTint!13,middle color=white,minimum width=\QuizAnswerWidth,
+      text width=\QuizAnswerWidth-10mm,minimum height=11mm,execute at begin node=\strut},
+   QuizSelected/.style={draw=Warn!70!black,left color=Warn!40,right color=Warn!40,middle color=Warn!6},
+   QuizRight/.style={draw=Gentoo!60!black,left color=Gentoo!40,right color=Gentoo!40,middle color=Gentoo!6},
+   QuizHidden/.style={draw=SoftGray,left color=SoftGray!45,right color=SoftGray!45,middle color=white,text opacity=0},
+   QuizLine/.style={draw=PartTint!45,line width=.7pt},
+   QuizButton/.style={rounded rectangle,draw=PartTint!65!black,line width=.7pt,left color=PartTint!18,right color=PartTint!18,
+      middle color=white,font=\scriptsize\sbseries,minimum width=17mm,minimum height=6mm,inner xsep=2mm},
+   QuizLayer/.style 2 args={ocg={name={Quiz \thequiz: #1},opts={#2},status=off,ref=quiz-\thequiz-#1}},
+}
+\newlength\QuizAnswerWidth
+\colorlet{QuizLetter}{PartTint!80!black}
+\newcounter{quiz}
+% the prize ladder follows the number of quizzes (written to the aux file), every prize links to its quiz
+\def\QuizPrizes{50,100,200,300,500,1000,2000,4000,8000,16000,32000,64000,125000,500000,1000000}
+\providecommand\QuizTotal{6}
+\makeatletter
+\AtEndDocument{\immediate\write\@auxout{\gdef\string\QuizTotal{\thequiz}}}
+\makeatother
+\newcommand\QuizPrize[1]{%
+   \pgfmathtruncatemacro\QuizIndex{max(1,min(15,round(#1*15/\QuizTotal)))-1}%
+   \pgfmathparse{{\QuizPrizes}[\QuizIndex]}%
+   \pgfmathtruncatemacro\QuizPrize{\pgfmathresult}\qty{\QuizPrize}{\euro}}
+\newcommand\QuizLadder{%
+   \foreach \q in {1,...,\QuizTotal} {%
+      \ifnum\q>1 \textcolor{SoftGray}{\enspace\textperiodcentered\enspace}\fi
+      \hyperlink{quiz-\q}{\ifnum\q=\value{quiz}\textcolor{Warn!85!black}{\sbseries\QuizPrize{\q}}\else\textcolor{gray}{\QuizPrize{\q}}\fi}%
+   }%
+}
+% \Solution{with solutions}{without}
+\makeatletter
+\newcommand\Solution[2]{\ifdefined\LectureNoSolutions\expandafter\@secondoftwo\else\expandafter\@firstoftwo\fi{#1}{#2}}
+% Frame keys. [optional]: a frame to read, not to present: gray in the versions to read, left out of the animated
+% ones. [solution]: left out of the version without solutions. A left out frame keeps no number, so the numbers of
+% the others stay consecutive. Beamer leaves out a frame whose overlay specification is 0, so the patch sets it
+% after the keys; every frame starts on the usual background, so the gray stays in its own frame.
+\colorlet{OptionalGray}{BaseGray!11}
+\newif\ifLeaveOutFrame
+\newcommand\LeaveOutFrame{\global\LeaveOutFrametrue}
+\newif\ifExcursionFrame
+\patchcmd\beamer@@@@frame{\def\beamer@frametemplate{}}
+   {\def\beamer@frametemplate{\setbeamercolor{background canvas}{bg=background}\global\ExcursionFramefalse}}{}{\PackageError{lecture}{Patch of the frame start failed}{}}
+\patchcmd\beamer@@@@frame{\gdef\beamer@whichframes{#1}}
+   {\gdef\beamer@whichframes{#1}\ifLeaveOutFrame\global\LeaveOutFramefalse\gdef\beamer@whichframes{0}\fi}
+   {}{\PackageError{lecture}{Patch of the frame start failed}{}}
+\define@key{beamerframe}{optional}[true]{\ifdefined\LectureAnimated\LeaveOutFrame
+   \else\appto\beamer@frametemplate{\setbeamercolor{background canvas}{bg=OptionalGray}\global\ExcursionFrametrue}\fi}
+% an optional frame says so in its top left corner
+\setbeamertemplate{background}{\ifExcursionFrame\begin{tikzpicture}[overlay,remember picture]
+   \node[anchor=north west,fill=BaseGray!55,text=white,font=\tiny\sbseries,rounded corners=1.2pt,inner xsep=3pt,inner ysep=1.5pt]
+      at([shift={(9mm,-2.5mm)}]current page.north west) {\faCompass~Excursion};
+\end{tikzpicture}\fi}
+\define@key{beamerframe}{solution}[true]{\ifdefined\LectureNoSolutions\LeaveOutFrame\fi}
+\makeatother
+% \QuizHint{text}: a small gray reminder in the upper right corner of the next quiz
+\newcommand\QuizHint[1]{\gdef\QuizHintText{#1}}
+% a macro of its own: beamer's frame parser cannot handle \begin inside a conditional in the frame body
+% The buttons of a quiz. As layers (OCG) in the versions for students; in the -notes versions, which pdfpc shows and which
+% cannot switch layers, they are steps of the frame: 2 is 50:50, 3 is the answer, and a button links to its step.
+% \QuizStep{layer}{layer options}{overlay}{content}
+\newcommand\QuizStep[4]{\ifdefined\LectureNotes\onslide<#3|handout:#3>{#4}\else\QuizStepLayer{#1}{#2}{#4}\fi}
+\newcommand\QuizStepLayer[3]{\begin{scope}[QuizLayer={#1}{#2}]#3\end{scope}}
+\newcommand\QuizIfLayers[1]{\ifdefined\LectureNotes\else#1\fi}
+\newcommand\QuizStepTargets{\ifdefined\LectureNotes\hypertarget<2|handout:2>{quiz-\thequiz-half}{}\hypertarget<3|handout:3>{quiz-\thequiz-answer}{}\fi}
+\newcommand\QuizStepLinks{\ifdefined\LectureNotes
+   % the 50:50 button toggles: on the 50:50 step it leads back to the plain question
+   \only<1,3|handout:1,3>{\node[inner sep=0pt,fit=(half),hyperlink node=quiz-\thequiz-half] {};}
+   \only<2|handout:2>{\node[inner sep=0pt,fit=(half),hyperlink node=quiz-\thequiz] {};}
+   \node[inner sep=0pt,fit=(lock),hyperlink node=quiz-\thequiz-answer] {};
+   \fi}
+\newcommand\QuizHintDraw{\ifdefined\QuizHintNow\QuizHintPicture\fi}
+\newcommand\QuizHintPicture{%
+   \begin{tikzpicture}[overlay,remember picture]
+         \node[anchor=north east,align=right,font=\scriptsize,text=gray,inner sep=0pt] at([shift={(-6mm,-5mm)}]current page.north east) {\QuizHintNow};
+   \end{tikzpicture}%
+}
+\newcommand\Quiz[8]{%
+   \stepcounter{quiz}%
+   \TakePendingNote
+   \ifdefined\QuizHintText\global\let\QuizHintNow\QuizHintText\global\let\QuizHintText\undefined\else\global\let\QuizHintNow\undefined\fi
+   % the -notes versions have the steps of a quiz also without animations
+   \ifdefined\LectureNotes\def\QuizFrame{\begin{frame}<1-|handout:1-3>}\else\def\QuizFrame{\begin{frame}}\fi
+   \QuizFrame[t]{Quiz: #1}
+   \hypertarget<1|handout:1>{quiz-\thequiz}{}%
+   \Solution{\QuizStepTargets}{}%
+   \UsePendingNote
+   \UsePingu{quiz}{\thequiz}%
+   \QuizHintDraw
+   \setlength\QuizAnswerWidth{\dimexpr.5\linewidth-6mm}%
+   % no hyphens in the boxes, and no stretchable space around relations
+   \hyphenpenalty=10000 \exhyphenpenalty=10000 \thickmuskip=5mu \medmuskip=4mu
+
+   \vspace*{4mm}
+   \begin{tikzpicture}[remember picture]
+      \node[QuizBox,minimum width=\linewidth-1mm,text width=\linewidth-16mm,minimum height=13mm,align=center,font=\normalsize] (question) at (0,0) {#2};
+      \node[QuizAnswer,below=4.5mm of question.south west,anchor=north west] (A) {{\color{QuizLetter}\sbseries A:}~#3};
+      \node[QuizAnswer,below=4.5mm of question.south east,anchor=north east] (B) {{\color{QuizLetter}\sbseries B:}~#4};
+      \node[QuizAnswer,below=3.5mm of A.south west,anchor=north west] (C) {{\color{QuizLetter}\sbseries C:}~#5};
+      \node[QuizAnswer,below=3.5mm of B.south east,anchor=north east] (D) {{\color{QuizLetter}\sbseries D:}~#6};
+      \Solution{
+         \node[QuizButton,below=6mm of C.south west,anchor=north west] (half) {50{:}50};
+         \node[QuizButton,right=3mm of half] (lock) {\faLock~final answer};
+         \coordinate (ladder-start) at([xshift=4mm]lock.east);
+      }{
+         \coordinate[below=6mm of C.south west] (half);
+         \coordinate (ladder-start) at(half);
+      }
+      % the ladder starts after the buttons, so that more quizzes never run into them
+      \node[font=\tiny,anchor=west,inner sep=0pt] (ladder) at(ladder-start) {\QuizLadder};
+      \begin{scope}[on background layer]
+         \draw[QuizLine,overlay] (current page.west |- question) -- (current page.east |- question)
+            (current page.west |- A) -- (current page.east |- B) (current page.west |- C) -- (current page.east |- D);
+      \end{scope}
+
+      \Solution{\QuizStep{half}{}{2-}{
+         \node[QuizButton,draw=PartTint,thick,fill=PartTint!14] at(half.center) {50{:}50};
+         \def\hidden{0}
+         \foreach \l in {A,B,C,D} {
+            \ifnum\pdfstrcmp{\l}{#7}=0\else\ifnum\hidden<2
+               \node[QuizAnswer,QuizHidden] at(\l.center) {\phantom{\l}};
+               \pgfmathtruncatemacro\h{\hidden+1}\global\let\hidden\h
+            \fi\fi
+         }
+      }}{}
+      \QuizIfLayers{\foreach \l/\answer in {A/{#3},B/{#4},C/{#5},D/{#6}} {
+         \QuizStepLayer{\l}{radiobtngrp=quiz-\thequiz}{\node[QuizAnswer,QuizSelected] at(\l.center) {{\color{QuizLetter}\sbseries\l:}~\answer};}
+      }}
+      \Solution{\QuizStep{answer}{printocg=always}{3-}{
+         % the explanation grays out the wrong answers
+         \foreach \l in {A,B,C,D} {\ifnum\pdfstrcmp{\l}{#7}=0\else
+            \fill[white,opacity=.65,rounded corners=4mm] (\l.south west) rectangle (\l.north east);\fi}
+         \foreach \l/\answer in {A/{#3},B/{#4},C/{#5},D/{#6}} {
+            \ifnum\pdfstrcmp{\l}{#7}=0 \node[QuizAnswer,QuizRight] at(\l.center) {{\color{QuizLetter}\sbseries\l:}~\answer};\fi
+         }
+         % the explanation covers the prize ladder, the penguin looks over its end
+         % between the buttons and the penguin, so that both stay visible and clickable
+         \fill[white,overlay] ([xshift=1mm]lock.east |- ladder.south) rectangle ([yshift=1mm]current page.east |- ladder.north);
+         \node[anchor=south east,inner sep=0pt] (explainer) at([yshift=-2mm]D.south east |- half.south) {\usebox\PinguBox};
+         \path let \p1=(lock.east), \p2=(explainer.west) in
+            node[rectangle callout,callout absolute pointer={([xshift=2.5mm,yshift=1.5mm]explainer.west)},draw=SoftGray,fill=white,rounded corners=3pt,
+            font=\footnotesize,text width=\x2-\x1-6mm-8pt,align=left,inner sep=4pt,anchor=south east] (explanation)
+            at([xshift=-2mm]explainer.south west) {\ListingCitestrue #8};
+      }}{}
+
+      \QuizIfLayers{\foreach \l in {A,B,C,D} \path[switch ocg=quiz-\thequiz-\l] (\l.south west) rectangle (\l.north east);}
+      \Solution{
+         \QuizIfLayers{\path[switch ocg=quiz-\thequiz-half] (half.south west) rectangle (half.north east);
+         \path[switch ocg=quiz-\thequiz-answer] (lock.south west) rectangle (lock.north east);}
+         \QuizStepLinks
+      }{}
+   \end{tikzpicture}
+   \end{frame}%
+}
+
+% \Contributes<overlay>{what}: right of a line of a report, what that line contributes
+\NewDocumentCommand\Contributes{D<>{2-} m}{\onslide<#1>{\textcolor{plotblue}{\faCheck}~#2}}
+
+% \KeyMessage<overlay>{text}: the message of a frame, as a line above the footer
+\NewDocumentCommand\KeyMessage{D<>{1-} m}{%
+   \begin{tikzpicture}[overlay,remember picture]
+      \node[above=13mm,text width=13.5cm,align=center,font=\small\itshape,execute at begin node={\hyphenpenalty=10000},text=BaseGray,visible on=<#1>] at(current page.south) {#2};
+   \end{tikzpicture}%
+   % keep the vertically centered body clear of the message
+   \par\vspace*{\KeyMessageSpace}%
+}
+\newlength\KeyMessageSpace
+\setlength\KeyMessageSpace{12mm}
+% a little air between items
+\setbeamertemplate{itemize/enumerate body begin}{\setlength\itemsep{.6ex plus .3ex}}
+\setbeamertemplate{itemize/enumerate subbody begin}{\setlength\itemsep{.3ex plus .2ex}}
+
+% Annotated code: \CodeMark{name} in an escape (!*\CodeMark{sel}*!) marks a place in a listing, usually the
+% end of a line. \CodeNote<overlay>[keys]{name}{text} puts a small gray note just right of the mark (or of
+% the playground button on its line), with a curved line into the code. Keys: dy (the note sits that much
+% higher than the mark), from=right|above|below (where the line leaves the mark)
+\makeatletter
+\newcommand\CodeMark[1]{\tikz[remember picture,overlay]\coordinate(code-#1)at(0,.6ex);}
+% the playground button of a listing remembers its place, so that notes keep clear of it
+\def\mrPlayButton{\tikz[remember picture,baseline={(0,-.32em)},x=\mrPlaySize,y=\mrPlaySize]{%
+   \coordinate (code-play-\the\c@page) at (.5,0);\csname mr@play@\mr@playstyle\endcsname}}
+\newdimen\CodeNoteX \newdimen\CodeNoteY
+\tikzset{
+   CodeNote/.style={font=\scriptsize\itshape,text=gray,align=left,anchor=west,inner sep=1pt},
+   CodeLine/.style={gray!45,line width=.4pt,line cap=round},
+   /codenote/.is family,/codenote,dy/.store in=\CodeNoteDy,from/.store in=\CodeNoteFrom,
+}
+% \NotShown{name}{code}: code that is not defined on the slide, gray with a dotted underline.
+% \VarNote<overlay>[anchor]{node}{(dx,dy)}{text} explains it: a gray note at that offset, with a tilted Kite arrow.
+% The node is ns-name of \NotShown, or code-name of \CodeMark.
+\newcommand\NotShown[2]{\tikz[remember picture,baseline=(ns-#1.base)]{%
+   \node[inner sep=0pt,outer sep=.5pt,text=gray!85!black] (ns-#1) {\ttfamily #2};
+   \draw[gray,densely dotted,line width=.5pt] ([yshift=-.5pt]ns-#1.south west) -- ([yshift=-.5pt]ns-#1.south east);}}
+% In a listing: \textcolor{NotShownGray}{name}\NotShownAfter{id}{name}, so that the playground still gets the name.
+\colorlet{NotShownGray}{gray!85!black}
+\newlength\NotShownWidth
+\newcommand\NotShownAfter[2]{\settowidth\NotShownWidth{\ttfamily #2}\kern-\NotShownWidth\tikz[remember picture,baseline=(ns-#1.base)]{%
+   \node[inner sep=0pt,outer sep=.5pt] (ns-#1) {\ttfamily\phantom{#2}};
+   \draw[gray,densely dotted,line width=.5pt] ([yshift=-.5pt]ns-#1.south west) -- ([yshift=-.5pt]ns-#1.south east);}}
+\NewDocumentCommand\VarNote{D<>{1-} O{south} m m m}{%
+   \ifcsname pgf@sh@ns@#3\endcsname
+   \begin{tikzpicture}[remember picture,overlay]
+      \node[font=\footnotesize,text=gray,align=left,inner sep=1pt,visible on=<#1>] (varnote) at ([shift={#4}]#3.#2) {#5};
+      \VarNoteAngles#4\relax{#2}%
+      \draw[gray,-{Kite[length=1.3mm,width=1.1mm]},thin,shorten >=1pt,visible on=<#1>]
+         (varnote.\VarNoteFrom) to[out=\VarNoteOut,in=\VarNoteIn] (#3.#2);
+   \end{tikzpicture}%
+   \fi
+}
+% where the arrow of a note at offset (dx,dy) leaves it, and the angles it leaves and arrives at:
+% it leaves the side facing the target, tilted by 20 degrees, and arrives from the outside of the anchor
+\csdef{varnote@in@east}{0}\csdef{varnote@in@north east}{45}\csdef{varnote@in@north}{90}\csdef{varnote@in@north west}{135}
+\csdef{varnote@in@west}{180}\csdef{varnote@in@south west}{225}\csdef{varnote@in@south}{270}\csdef{varnote@in@south east}{315}
+\def\VarNoteAngles(#1,#2)\relax#3{%
+   \pgfmathsetmacro\VarNoteDx{#1}\pgfmathsetmacro\VarNoteDy{#2}%
+   \pgfmathtruncatemacro\VarNoteSx{\VarNoteDx<0?-1:1}\pgfmathtruncatemacro\VarNoteSy{\VarNoteDy<0?-1:1}%
+   \pgfmathtruncatemacro\VarNoteWide{abs(\VarNoteDx)>abs(\VarNoteDy)?1:0}%
+   \ifnum\VarNoteWide=1
+      \ifnum\VarNoteSx>0 \def\VarNoteFrom{west}\else\def\VarNoteFrom{east}\fi
+      \pgfmathtruncatemacro\VarNoteOut{90+90*\VarNoteSx+20*\VarNoteSx*\VarNoteSy}%
+   \else
+      \ifnum\VarNoteSy>0 \def\VarNoteFrom{south}\else\def\VarNoteFrom{north}\fi
+      \pgfmathtruncatemacro\VarNoteOut{-90*\VarNoteSy-20*\VarNoteSx*\VarNoteSy}%
+   \fi
+   % an east or west anchor would give a flat S curve, so the arrow also arrives tilted by 30 degrees
+   \edef\VarNoteIn{\csuse{varnote@in@#3}}%
+   \ifnum\VarNoteIn=0 \pgfmathtruncatemacro\VarNoteIn{30*\VarNoteSy}\fi
+   \ifnum\VarNoteIn=180 \pgfmathtruncatemacro\VarNoteIn{180-30*\VarNoteSy}\fi
+}
+\NewDocumentCommand\CodeNote{D<>{1-} O{} m m}{%
+   % the mark exists only once its line is on the overlay, and once R ran
+   \ifcsname pgf@sh@ns@code-#3\endcsname
+   \pgfqkeys{/codenote}{dy=0mm,from=right,#2}%
+   \begin{tikzpicture}[remember picture,overlay]
+      \pgfextractx\CodeNoteX{\pgfpointanchor{code-#3}{center}}%
+      % on the line of the playground button: right of the button
+      \ifcsname pgf@sh@ns@code-play-\the\c@page\endcsname
+         \pgfextracty\dimen@{\pgfpointanchor{code-#3}{center}}%
+         \pgfextracty\CodeNoteY{\pgfpointanchor{code-play-\the\c@page}{center}}%
+         \advance\dimen@-\CodeNoteY \ifdim\dimen@<0pt \dimen@=-\dimen@\fi
+         % the note goes above the button, its line arcs over it
+         \ifdim\dimen@<2.5mm \def\CodeNoteDy{4.5mm}\def\CodeNoteFrom{over}\fi
+      \fi
+      \path let \p1=(code-#3) in node[CodeNote,visible on=<#1>] (note-#3) at(\CodeNoteX+6mm,\y1+\CodeNoteDy) {#4};
+      \ifdefstring\CodeNoteFrom{above}{\def\CodeStart{([xshift=-.8mm,yshift=1.1ex]code-#3)}\def\CodeOut{80}}{%
+      \ifdefstring\CodeNoteFrom{below}{\def\CodeStart{([xshift=-.8mm,yshift=-1.6ex]code-#3)}\def\CodeOut{-80}}{%
+      \ifdefstring\CodeNoteFrom{over}{\def\CodeStart{([xshift=1mm]code-#3)}\def\CodeOut{45}}{%
+         \def\CodeStart{([xshift=1mm]code-#3)}\def\CodeOut{0}}}}%
+      \draw[CodeLine,{Kite[length=1.3mm,width=1.1mm]}-,visible on=<#1>] \CodeStart to[out=\CodeOut,in=180] ([xshift=-.6mm]note-#3.west);
+   \end{tikzpicture}%
+   \fi
+}
+\makeatother
+
+% \NumberOr\cs{default}: keeps \cs only if it is a plain number, e.g. while R values are still pending
+\ExplSyntaxOn
+\NewDocumentCommand \NumberOr { m m }
+  { \regex_match:nVF { \A\s*-?[0-9]+(\.[0-9]+)?\s*\Z } #1 { \tl_set:Nn #1 {#2} } }
+\cs_generate_variant:Nn \regex_match:nnF { nV }
+% \RQty{R expression}{unit}: a value from R as a quantity. While R values are pending, the placeholder prints as is
+\cs_generate_variant:Nn \regex_match:nnTF { nV }
+\tl_new:N \l__lecture_value_tl
+\tl_new:N \l__lecture_high_tl
+\cs_new_protected:Npn \__lecture_qty:nn #1#2 { \qty {#1} {#2} }
+\cs_generate_variant:Nn \__lecture_qty:nn { Vn }
+\cs_new_protected:Npn \__lecture_num:n #1 { \num {#1} }
+\cs_generate_variant:Nn \__lecture_num:n { V }
+\NewDocumentCommand \RQty { m m }
+  {
+    \mrValueInto \l__lecture_value_tl {#1}
+    \regex_match:nVTF { \A\s*-?[0-9]+(\.[0-9]+)?\s*\Z } \l__lecture_value_tl
+      { \__lecture_qty:Vn \l__lecture_value_tl {#2} }
+      { \l__lecture_value_tl \, \unit {#2} }
+  }
+% \RInterval{R expression}{R expression}{unit}: an interval from R as [low, high] unit
+\NewDocumentCommand \RInterval { m m m }
+  {
+    \mrValueInto \l__lecture_value_tl {#1}
+    \mrValueInto \l__lecture_high_tl {#2}
+    \regex_match:nVTF { \A\s*-?[0-9]+(\.[0-9]+)?\s*\Z } \l__lecture_value_tl
+      { [ \__lecture_num:V \l__lecture_value_tl ,~ \__lecture_num:V \l__lecture_high_tl ] \, \unit {#3} }
+      { \l__lecture_value_tl \, \unit {#3} }
+  }
+\ExplSyntaxOff

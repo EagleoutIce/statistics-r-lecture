@@ -1,0 +1,449 @@
+\Chapter{3}
+
+\begin{frame}[label=plot-communicate,optional]{Communicating With Graphs}
+\centering
+\vspace*{3mm}
+\begin{tikzpicture}
+   \node[Plot] (bad) at (0,0) {\includegraphics[width=4.6cm]{communicate-1}};
+   \node[Plot,right=16mm of bad,visible on=<2->] (good) {\includegraphics[width=4.6cm]{communicate-2}};
+   \node[below=1mm,Note,font=\small] at(bad.south) {default: legend, no message};
+   \node[below=1mm,Note,font=\small,visible on=<2->] at(good.south) {means with intervals, labels, the message as title};
+\end{tikzpicture}
+\KeyMessage<3->{Put the message in the title, and label the groups directly instead of using a legend.}
+\ShowPerson{nightingale}
+\PlotCode{communicate}
+\Stage[14mm]{Visualize,Communicate}
+\NoteRef{communicating/plot-communicate}
+\end{frame}
+
+\begin{frame}[optional]{Three Laws of Communication}
+\centering
+{\small\color{gray}after Jean-luc Doumont\supercite{doumont2002laws}\par}\vspace{3mm}
+\begin{tikzpicture}[Law/.style={Card,anchor=north west,text width=37mm,font=\small,align=left,minimum height=40mm}]
+   \foreach[count=\i] \law/\plot in {
+      {Adapt to your audience}/{A slide needs larger text and fewer details than a figure in a paper.},
+      {Maximize the signal-to-noise ratio}/{Remove what does not carry data: frames, heavy grids, 3D effects, decoration.},
+      {Use effective redundancy}/{Say the message twice: in the title and in the plot, by color and by label.}%
+   } {
+      \node[Law,draw=PartTint,visible on=<\i->] at ({(\i-1)*44mm},0) {\textsb{\i. \law}\\[2mm]\plot};
+   }
+\end{tikzpicture}
+\KeyMessage<4->{You should be able to say in one sentence what each plot shows.\supercite{doumont2009trees,tufte2001visual}}
+\Stage{Communicate}
+\NoteRef{communicating/three-laws-of-communication}
+\end{frame}
+
+% a row of the ladder of encodings, the same height for every picture
+\newcommand\Row[1]{\parbox[c][6.5mm][c]{24mm}{\centering #1}}
+\begin{frame}[label=plot-pie-bar]{Visual Encodings}
+\centering
+\begin{tikzpicture}
+   \node[anchor=north west,font=\small] (ladder) at (0,0) {%
+      \renewcommand\arraystretch{1}%
+      \begin{tabular}{@{}c@{\quad}l@{\quad}c@{}}
+         \onslide<2->{\textsb{1} & Position on a common scale & \Row{\GlyphPosition}} \\
+         \onslide<3->{\textsb{2} & Position on non-aligned scales & \Row{\GlyphAligned}} \\
+         \onslide<4->{\textsb{3} & Length, direction, angle & \Row{\GlyphLength\,\GlyphAngle}} \\
+         \onslide<5->{\textsb{4} & Area & \Row{\GlyphArea}} \\
+         \onslide<6->{\textsb{5} & Volume, curvature & \Row{\GlyphVolume\,\GlyphCurvature}} \\
+         \onslide<7->{\textsb{6} & Shading, color saturation & \Row{\GlyphShade}}
+      \end{tabular}%
+   };
+   \node[above right,yshift=1.5mm,font=\small\sbseries] at(ladder.north west) {How accurately we read values\supercite{cleveland1984graphical}};
+   \onslide<2->{\draw[Link,gray,thick] ([xshift=-3mm,yshift=-4mm]ladder.north west) -- ([xshift=-3mm,yshift=4mm]ladder.south west) node[midway,left,rotate=90,anchor=south,font=\tiny,gray] {less accurate};}
+
+   \onslide<8->{
+      \node[Plot,anchor=north west] (pie) at ([xshift=5mm,yshift=-2mm]ladder.north east) {\includegraphics[width=2.4cm]{pie-chart}};
+      \node[above,yshift=1.5mm,font=\small\sbseries] at(pie.north) {Which slice is bigger, C or D?};
+   }
+   \onslide<9->{
+      \node[Plot,right=2mm of pie.north east,anchor=north west] (bar) {\includegraphics[width=2.5cm]{bar-chart}};
+   }
+\end{tikzpicture}
+\KeyMessage<10->{Put the comparison you care about most on a shared axis.}
+\PlotCode{pie-bar}
+\Stage{Visualize}
+\NoteRef{communicating/plot-pie-bar}
+\end{frame}
+
+% tiny sketches of the charts: x from 0 to 10, y from 0 to 10
+\newcommand\ChartIcon[1]{\tikz[x=.48mm,y=.26mm,baseline=.2mm,sharp corners,line width=.3pt,plotblue]{\path (0,0) rectangle (10,10);#1}}
+\newcommand\IconHist{\foreach \x/\h in {0/3,2/6,4/10,6/7,8/3}{\fill (\x,0) rectangle ++(1.8,\h);}}
+\newcommand\IconDens{\fill plot[smooth,domain=0:10,samples=20] (\x,{10*exp(-(\x-5)^2/5)}) -- (10,0) -- (0,0) -- cycle;}
+\newcommand\IconBox{\draw (0,5) -- (10,5);\filldraw[fill=white] (3,2) rectangle (7,8);\draw (5,2) -- (5,8);}
+\newcommand\IconScat{\foreach \x/\y in {1/2,2/4,3/3,4/6,5/4,6/7,7/6,8/8,9/9}{\fill (\x,\y) circle[radius=.5];}}
+\newcommand\IconTwod{\draw (5,5) ellipse[x radius=5,y radius=5];\draw (5,5) ellipse[x radius=3,y radius=3];\fill (5,5) ellipse[x radius=1.2,y radius=1.2];}
+\newcommand\IconHex{\foreach \x/\y/\o in {2/3/40,5/3/100,8/3/60,3.5/7.5/80,6.5/7.5/30}{\fill[plotblue!\o] (\x+1.5,\y) -- (\x+.75,\y+2.2) -- (\x-.75,\y+2.2) -- (\x-1.5,\y) -- (\x-.75,\y-2.2) -- (\x+.75,\y-2.2) -- cycle;}}
+\newcommand\IconBar{\foreach \x/\h in {.5/9,4/6,7.5/3}{\fill (\x,0) rectangle ++(2,\h);}}
+\newcommand\IconLol{\foreach \x/\h in {1.5/9,5/6,8.5/3}{\draw (\x,0) -- (\x,\h);\fill (\x,\h) circle[radius=.9];}}
+\newcommand\IconTree{\draw (0,0) rectangle (10,10) (6,0) -- (6,10) (0,4) -- (6,4) (6,6) -- (10,6);\fill (0,4) rectangle (6,10);}
+\newcommand\IconGbox{\foreach \x/\l/\h in {1/2/6,6/4/9}{\draw (\x+1.5,0) -- (\x+1.5,10);\filldraw[fill=white] (\x,\l) rectangle ++(3,\h-\l);\draw (\x,{(\l+\h)/2}) -- ++(3,0);}}
+\newcommand\IconVio{\foreach \c in {2.5,7.5}{\fill plot[smooth,variable=\t,domain=0:10,samples=12] ({\c+2*exp(-(\t-5)^2/6)},\t) -- plot[smooth,variable=\t,domain=10:0,samples=12] ({\c-2*exp(-(\t-5)^2/6)},\t) -- cycle;}}
+\newcommand\IconRidge{\foreach \b/\m in {5/4,0/6}{\filldraw[fill=white] plot[smooth,domain=0:10,samples=15] (\x,{\b+5*exp(-(\x-\m)^2/3)}) -- cycle;}}
+\newcommand\IconLine{\draw (0,2) -- (2.5,5) -- (5,4) -- (7.5,8) -- (10,7);}
+\newcommand\IconArea{\fill (0,0) -- (0,2) -- (2.5,5) -- (5,4) -- (7.5,8) -- (10,7) -- (10,0) -- cycle;}
+\newcommand\IconSmall{\foreach \x in {0,3.6,7.2}{\draw[gray,line width=.2pt] (\x,0) rectangle ++(2.8,10);\draw (\x,2) -- ++(1.4,5) -- ++(1.4,-2);}}
+\begin{frame}{Choosing a Chart}
+\begin{tikzpicture}[
+   Kind/.style={Pill=plotblue!80,font=\scriptsize\sbseries,minimum width=23mm,text height=1.6ex,text depth=.4ex},
+   Chart/.style={font=\footnotesize,anchor=west,inner sep=1pt,text height=1.6ex,text depth=.4ex},
+   level distance=13mm,
+   level 1/.style={sibling distance=29mm,
+      edge from parent path={(\tikzparentnode.south) -- ([yshift=-3mm]\tikzparentnode.south) -| (\tikzchildnode.north)},
+      edge from parent/.style={draw,SoftGray,thick,rounded corners=3pt}},
+   level 2/.style={
+      grow via three points={one child at (-6.5mm,-8mm) and two children at (-6.5mm,-8mm) and (-6.5mm,-13.5mm)},
+      edge from parent path={([xshift=-9mm]\tikzparentnode.south) |- (\tikzchildnode.west)},
+      edge from parent/.style={draw,SoftGray,rounded corners=3pt},
+   },
+]
+   \node[Pill=BaseGray,font=\small\sbseries,inner xsep=8pt,inner ysep=4pt] (data) {What kind of data do you have?}
+      child[visible on=<2->] {node[Kind] {\faBarChart~One numeric}
+         child {node[Chart] {\ChartIcon{\IconHist}~histogram}} child {node[Chart] {\ChartIcon{\IconDens}~density}} child {node[Chart] {\ChartIcon{\IconBox}~boxplot}}}
+      child[visible on=<3->] {node[Kind] {\faCrosshairs~Two numeric}
+         child {node[Chart] {\ChartIcon{\IconScat}~scatter}} child {node[Chart] {\ChartIcon{\IconTwod}~2D density}} child {node[Chart] {\ChartIcon{\IconHex}~hexbin}}}
+      child[visible on=<4->,edge from parent path={(\tikzparentnode.south) -- (\tikzchildnode.north)}] {node[Kind] {\faTags~Categorical}
+         child {node[Chart] {\ChartIcon{\IconBar}~barplot}} child {node[Chart] {\ChartIcon{\IconLol}~lollipop}} child {node[Chart] {\ChartIcon{\IconTree}~treemap}}}
+      child[visible on=<5->] {node[Kind] {\faSliders~Num \& Cat}
+         child {node[Chart] {\ChartIcon{\IconGbox}~grouped box}} child {node[Chart] {\ChartIcon{\IconVio}~violin}} child {node[Chart] {\ChartIcon{\IconRidge}~ridgeline}}}
+      child[visible on=<6->] {node[Kind] {\faLineChart~Time series}
+         child {node[Chart] {\ChartIcon{\IconLine}~line}} child {node[Chart] {\ChartIcon{\IconArea}~area}} child {node[Chart] {\ChartIcon{\IconSmall}~small multiples}}};
+   \node[below=38mm,font=\small,gray,visible on=<7->] at(data.south) {Simple usually beats fancy: AI can generate impressive plots in seconds that mean nothing};
+\end{tikzpicture}
+\KeyMessage<8->{Pick the chart from the data type, then read its caveats.\supercite{holtz2018datatoviz}}
+\Tutorial{https://www.data-to-viz.com/}{data-to-viz.com: the full decision tree}
+\Stage{Visualize}
+\NoteRef{communicating/choosing-a-chart}
+\end{frame}
+
+\begin{frame}[label=plot-overplotting,optional]{Overplotting}
+\centering
+\begin{tikzpicture}
+   \node[Plot] (p1) at (0,0) {\includegraphics[width=4.1cm]{overplot-1}};
+   \node[Plot,right=4mm of p1,visible on=<2->] (p2) {\includegraphics[width=4.1cm]{overplot-2}};
+   \node[Plot,right=4mm of p2,visible on=<3->] (p3) {\includegraphics[width=4.1cm]{overplot-3}};
+   \node[below=1mm,Note] at(p1.south) {\bR{geom_point()}: a black blob};
+   \node[below=1mm,Note,visible on=<2->] at(p2.south) {transparency shows density};
+   \node[below=1mm,Note,visible on=<3->] at(p3.south) {hexagonal binning counts points per cell};
+\end{tikzpicture}
+\PlotCode{overplotting}
+\KeyMessage<4->{With \mrValueOf{format(nrow(ggplot2::diamonds), big.mark = ",")} points, show the density, not the points.\supercite{holtz2018datatovizcaveats}}
+\Stage{Visualize}
+\NoteRef{communicating/plot-overplotting}
+\end{frame}
+
+\begin{frame}[label=plot-spaghetti]{Spaghetti Plots}
+\centering
+\begin{tikzpicture}
+   \node[Plot] (p1) at (0,0) {\includegraphics[width=5.3cm]{spaghetti-1}};
+   \node[Plot,right=8mm of p1,visible on=<2->] (p2) {\includegraphics[width=5.3cm]{spaghetti-2}};
+   \node[below=1mm,Note,font=\small] at(p1.south) {50 chicks, 50 colors, no story};
+   \node[below=1mm,Note,font=\small,visible on=<2->] at(p2.south) {small multiples and one highlighted summary};
+\end{tikzpicture}
+\ShowPerson{tufte}
+\PlotCode{spaghetti}
+\KeyMessage<3->{Split by a grouping variable, gray out the context, and highlight what matters.\supercite{holtz2018datatovizcaveats}}
+\Stage[14mm]{Visualize}
+\NoteRef{communicating/plot-spaghetti}
+\end{frame}
+
+\begin{frame}[label=plot-colours]{Color Scales}
+\centering
+\begin{tikzpicture}
+   \node[Plot] (rainbow) at (0,0) {\includegraphics[width=2.9cm]{volcano-rainbow}};
+   \node[Plot,right=2mm of rainbow,visible on=<2->] (viridis) {\includegraphics[width=2.9cm]{volcano-viridis}};
+   \node[Plot,right=8mm of viridis,visible on=<3->] (rainbow-grey) {\includegraphics[width=2.9cm]{volcano-rainbow-grey}};
+   \node[Plot,right=2mm of rainbow-grey,visible on=<3->] (viridis-grey) {\includegraphics[width=2.9cm]{volcano-viridis-grey}};
+   \foreach \n/\t/\o in {rainbow/Rainbow/1,viridis/Viridis/2,rainbow-grey/Rainbow in gray/3,viridis-grey/Viridis in gray/3}
+      \node[above=1mm,font=\small\sbseries,visible on=<\o->] at(\n.north) {\t};
+\end{tikzpicture}
+\PlotCode{colours}
+\KeyMessage<4->{The rainbow invents edges and loses its order in gray: use viridis\supercite{garnier2024viridis} or ColorBrewer.\supercite{harrower2003colorbrewer}}
+\Stage{Visualize}
+\NoteRef{communicating/plot-colours}
+\end{frame}
+
+\begin{frame}[label=plot-color-vision,optional]{Color Vision Deficiency}
+\centering
+\begin{tikzpicture}
+   \node[Plot] (plot) at (0,0) {\includegraphics[width=11.5cm]{color-vision}};
+   \node[below=2mm,font=\small,text width=11.5cm,align=center] at(plot.south) {%
+      About \qty{8}{\percent} of men have a red-green deficiency.\supercite{birch2012prevalence} The rainbow loses its order for them, viridis keeps it.\supercite{garnier2024viridis}};
+\end{tikzpicture}
+\PlotCode{color-vision}
+\ShowPerson{dalton}
+\Stage[14mm]{Visualize}
+\NoteRef{communicating/plot-color-vision}
+\end{frame}
+
+\begin{frame}[label=plot-encode-twice]{Encode Twice}
+\centering
+\begin{tikzpicture}
+   \node[Plot] (one) at (0,0) {\includegraphics[width=5cm]{encode-twice-1}};
+   \node[Plot,right=10mm of one,visible on=<2->] (two) {\includegraphics[width=5cm]{encode-twice-2}};
+   \node[below=1mm,Note,font=\small] at(one.south) {color alone, legend far away};
+   \node[below=1mm,Note,font=\small,visible on=<2->] at(two.south) {color, shape, and a direct label};
+\end{tikzpicture}
+\PlotCode{encode-twice}
+\KeyMessage<3->{Color alone fails in gray print and for about 1 in 12 men: add a shape, a label, or a position.}
+\Stage{Visualize,Communicate}
+\NoteRef{communicating/plot-encode-twice}
+\end{frame}
+
+% the urls contain slashes, so the \foreach list names them by key
+\csdef{gallery@datatoviz}{https://www.data-to-viz.com}
+\csdef{gallery@rgallery}{https://r-graph-gallery.com}
+\csdef{gallery@ftvocabulary}{https://github.com/Financial-Times/chart-doctor}
+\csdef{gallery@vizcatalogue}{https://datavizcatalogue.com}
+\csdef{gallery@vizproject}{https://datavizproject.com}
+\begin{frame}{Chart Catalogues}
+\centering
+\vspace*{4mm}
+\begin{tikzpicture}[
+   Gallery/.style={Card,align=center,text width=21mm,anchor=north,font=\scriptsize},
+]
+   \foreach[count=\i] \key/\name/\what in {
+      datatoviz/From Data to Viz/{a decision tree from the data type},
+      rgallery/R Graph Gallery/{hundreds of plots with R code},
+      ftvocabulary/FT Visual Vocabulary/{charts by the relation they show},
+      vizcatalogue/Data Viz Catalogue/{what each chart can and cannot do},
+      vizproject/Data Viz Project/{charts by function and shape}%
+   } {
+      % five shades from the first to the last part color; fixed text heights keep the codes in one row
+      \pgfmathtruncatemacro\mix{100-(\i-1)*25}
+      \colorlet{gallery}{PartOne!\mix!PartFour}
+      \node[Gallery,draw=gallery!60,visible on=<\i->,href node=\csuse{gallery@\key}] at({(\i-1)*27.5mm},0)
+         {\Qr[gallery]{19mm}{\csuse{gallery@\key}}\\[2mm]\parbox[t][7mm][t]{21mm}{\centering\textsb{\name}}\\[1mm]
+          \parbox[t][11mm][t]{21mm}{\centering\textcolor{gray}{\what}}};
+   }
+\end{tikzpicture}
+\Stage{Visualize}
+\NoteRef{communicating/chart-catalogues}
+\end{frame}
+
+\Chapter{4}
+
+\begin{frame}{What Is Being Measured?}
+\centering
+\begin{tikzpicture}[x=1.25cm,
+   Stop/.style={circle,draw=BaseGray,fill=white,thick,minimum size=5mm,inner sep=0pt,font=\scriptsize\sbseries},
+   OnTime/.style={Stop,fill=plotblue!20,draw=plotblue},
+   Late/.style={Stop,fill=Warn!20,draw=Warn},
+   Gone/.style={Stop,dashed,draw=gray,text=gray},
+   Delay/.style={below=2mm,font=\scriptsize,align=center},
+]
+   \draw[SoftGray,line width=2pt,line cap=round] (0,0) -- (10,0);
+   \foreach \x/\name in {0/A,10/D} \node[Stop] (\name) at (\x,0) {\name};
+   \node[Stop] (B) at (10/3,0) {B};
+   \node[Stop] (C) at (20/3,0) {C};
+   \onslide<2->{
+      \node[OnTime] at(A) {A};
+      \node[Delay] at(A.south) {\(+2\) min\\on time};
+   }
+   \onslide<3->{
+      \node[Late] at(B) {B};
+      \node[Delay] at(B.south) {\(+9\) min\\late};
+   }
+   \onslide<4->{
+      \node[Gone] at(C) {C};
+      \node[Delay,gray] at(C.south) {cancelled};
+   }
+   \onslide<5->{
+      \node[OnTime] at(D) {D};
+      \node[Delay] at(D.south) {\(+3\) min\\on time};
+   }
+   \node[above=3mm,font=\small,align=center] at(5,0) {A made-up train with four planned stops. On time means less than six minutes late.\supercite{kriesel2019bahnmining}};
+
+   \node[Card,below=18mm,anchor=north east,text width=50mm,font=\small,visible on=<6->] (db) at(4.6,0) {%
+      \textsb{Only stops that happened}\\[1mm]
+      2 of 3 on time: \qty{67}{\percent}};
+   \node[Card,below=18mm,anchor=north west,text width=50mm,font=\small,visible on=<7->] (all) at(5.4,0) {%
+      \textsb{All planned stops}\\[1mm]
+      2 of 4 on time: \qty{50}{\percent}};
+\end{tikzpicture}
+\KeyMessage<8->{Cancelled trains are not counted, so cancelling a late train improves the rate. Ask what is missing from the denominator.}
+\Stage{Communicate}
+\NoteRef{communicating/what-is-being-measured}
+\end{frame}
+
+\begin{frame}{Twice as Fast?}
+\begin{tikzpicture}[
+   /pgfplots/Runtime/.style={lecture axis,ybar,bar width=10mm,width=4.6cm,height=5cm,
+      symbolic x coords={ours,theirs},xtick=data,enlarge x limits=.5,ymax=45,
+      ylabel={Runtime (s)},nodes near coords,every node near coord/.append style={font=\scriptsize},
+      title style={font=\scriptsize\sbseries}},
+]
+   \begin{axis}[Runtime,name=cut,ymin=38,title={\textcolor{Warn}{\enquote{We are twice as fast!}}}]
+      \RoundBars[fill=plotblue!70]{38}{(ours,40) (theirs,42)}
+   \end{axis}
+   \begin{scope}[visible on=<2->]
+   \begin{axis}[Runtime,name=full,at={(cut.south east)},anchor=south west,xshift=12mm,ymin=0,title={The same runtimes from zero}]
+      \RoundBars[fill=plotblue!70]{0}{(ours,40) (theirs,42)}
+   \end{axis}
+   \end{scope}
+   \node[right=8mm,anchor=north west,text width=4.4cm,font=\small,align=left,visible on=<3->] at(full.north east) {%
+      The axis starts at \qty{38}{\second}.\\ The bars are \(2\) and \(4\) long.\\[2mm]
+      The real ratio: \(42 / 40 = 1.05\).\\ Five percent, not twice.\supercite{huff1954lie}\\[2mm]\textcolor{gray}{\footnotesize Run time is on a ratio scale: it has a true zero, so \enquote{twice} needs that zero.}};
+\end{tikzpicture}
+\KeyMessage<4->{\enquote{Twice}, \enquote{half}, \enquote{\qty{+50}{\percent}} are ratios: their axis must start at zero.\\ Better yet, state the ratio itself.}
+\Stage{Visualize,Communicate}
+\NoteRef{communicating/twice-as-fast}
+\end{frame}
+
+\begin{frame}{Axes and Baselines}
+\alt<1|handout:0>{\def\AxisMin{74.5}\def\AxisMax{76.8}}{\def\AxisMin{0}\def\AxisMax{100}}
+\begin{tikzpicture}
+   \begin{axis}[
+      lecture axis,
+      ybar,
+      bar width=14mm,
+      width=7cm,height=5.4cm,
+      symbolic x coords={Goal 2019,Reached 2018},
+      xtick=data,
+      enlarge x limits=.45,
+      ymin=\AxisMin,ymax=\AxisMax,
+      ylabel={Punctual long-distance trains (\%)},
+      nodes near coords,
+      every node near coord/.append style={font=\scriptsize},
+      name=bars,
+   ]
+      \RoundBars[fill=plotblue!70]{\AxisMin}{(Goal 2019,76.5) (Reached 2018,74.9)}
+   \end{axis}
+   \node[right=8mm,anchor=north west,text width=5.4cm,font=\small,align=left] (story) at(bars.north east) {%
+      \alt<1|handout:0>{An axis starting at \qty{74.5}{\percent}: a dramatic gap.}{The same two numbers from zero: \num{1.6} percentage points apart.}\\[1mm]
+      {\scriptsize\color{gray}Numbers: Deutsche Bahn, via David Kriesel\supercite{kriesel2019bahnmining}}};
+   \node[below=3mm of story.south west,anchor=north west,text width=5.4cm,font=\small,align=left,visible on=<3->] {%
+      Bars encode length, so they must start at zero. Points and lines may zoom in, but mark it.\supercite{huff1954lie,cairo2019charts}};
+\end{tikzpicture}
+\Stage{Visualize,Communicate}
+\NoteRef{communicating/axes-and-baselines}
+\end{frame}
+
+\begin{frame}{Relative or Absolute?}
+\centering
+\begin{tikzpicture}
+   % 1995: the risk of a thrombosis \enquote{doubled} with a newer pill
+   \node[anchor=north west,text width=58mm,font=\normalsize\sbseries,align=left,inner sep=0pt] (head) at (0,0)
+      {The new pill doubles the risk of thrombosis};
+   \node[below=4mm of head.south west,anchor=north west,font=\small,inner sep=0pt,visible on=<2->] (rel)
+      {\textsb{Relative:} \qty{+100}{\percent}};
+   \node[below=2mm of rel.south west,anchor=north west,font=\small,inner sep=0pt,visible on=<3->] (claim)
+      {\textsb{Absolute:} from 1 to 2 in \num{7000} women};
+   \node[below=5mm of claim.south west,anchor=north west,text width=58mm,font=\footnotesize,text=darkgray,align=left,visible on=<5->] {%
+      UK, 1995: many women stopped the pill.\\ About \num{13000} more abortions followed.\supercite{gigerenzer2007statistics}};
+   % 7000 women as 100 x 70 dots, the cases in red
+   \begin{scope}[shift={(68mm,-1mm)},visible on=<3->]
+      % each row is a dashed line of 100 round dots
+      \foreach \r in {0,...,69}
+         \draw[SoftGray!80,line width=.34mm,line cap=round,dash pattern=on 0pt off .6mm] (0,-\r*.6mm) -- (59.5mm,-\r*.6mm);
+      \fill[Warn] (31*.6mm,-24*.6mm) circle (.9mm);
+      \fill[Warn,visible on=<4->] (72*.6mm,-51*.6mm) circle (.9mm);
+      \node[below,font=\scriptsize,text=darkgray] at (29.7mm,-42mm) {\num{7000} women: \alt<4->{2 cases with the new pill}{1 case with the old pill}};
+   \end{scope}
+\end{tikzpicture}
+\KeyMessage<6->{Give the absolute numbers with every relative change.\supercite{gigerenzer2007statistics}}
+\ShowPerson{gigerenzer}
+\Stage[22mm]{Communicate}
+\NoteRef{communicating/relative-or-absolute}
+\end{frame}
+
+\begin{frame}{How Many Decimals?}
+\centering
+\begin{tikzpicture}
+   \node[anchor=west,font=\Large,text=gray,inner sep=0pt] (bad) at (0,0) {\qty{85.71}{\percent} agree};
+   \draw[Warn,thick] (bad.west) -- (bad.east);
+   \node[anchor=west,font=\Large\sbseries,inner sep=0pt,visible on=<2->] (good) at([xshift=12mm]bad.east) {6 of 7 agree};
+   \node[below=4mm of bad.south west,anchor=north west,font=\small,inner sep=0pt,text width=115mm,align=left,text=black] (one) {%
+      \begin{itemize}
+         \item<3-> One person more moves the result by 14 percentage points, so two decimals promise what 7 people cannot
+         \item<4-> The \qty{95}{\percent} interval for 6 of 7 runs from \qty{42}{\percent} to \qty{99.6}{\percent}: \bR{binom.test(6, 7)}
+      \end{itemize}};
+\end{tikzpicture}
+\KeyMessage<5->{Small samples: give the counts. Decimals only when \(n\) can carry them.}
+\Stage{Communicate}
+\NoteRef{communicating/how-many-decimals}
+\end{frame}
+
+\begin{frame}{Tables}
+\begin{tikzpicture}
+   \node[anchor=north west] (bad) at (0,0) {%
+      \scriptsize\renewcommand\arraystretch{1.2}%
+      \fontfamily{FiraSans-TLF}\selectfont
+      \begin{tabular}{|l|l|r|r|}
+         \hline
+         species & sex & mass & n \\ \hline
+         Adelie & female & 3368.835616 & 73 \\ \hline
+         Adelie & male & 4043.493151 & 73 \\ \hline
+         Chinstrap & female & 3527.205882 & 34 \\ \hline
+         Chinstrap & male & 3938.970588 & 34 \\ \hline
+         Gentoo & female & 4679.741379 & 58 \\ \hline
+         Gentoo & male & 5484.836066 & 61 \\ \hline
+      \end{tabular}%
+   };
+   \node[above,font=\small\sbseries,Warn] at(bad.north) {Before};
+   \node[right=14mm of bad,visible on=<2->] (good) {%
+      \scriptsize
+      \fontfamily{FiraSans-TLF}\selectfont
+      \begin{tabular}{@{}llS[table-format=4.0]S[table-format=3.0]@{}}
+         \toprule
+         Species & Sex & {Mean body mass (\unit{\gram})} & {\(n\)} \\
+         \midrule
+         Adelie & female & 3369 & 73 \\
+                & male & 4043 & 73 \\
+         \addlinespace
+         Chinstrap & female & 3527 & 34 \\
+                   & male & 3939 & 34 \\
+         \addlinespace
+         Gentoo & female & 4680 & 58 \\
+                & male & 5485 & 61 \\
+         \bottomrule
+      \end{tabular}%
+   };
+   \node[above,font=\small\sbseries,plotblue,visible on=<2->] at(good.north) {After};
+   \draw[Link,gray,thick,visible on=<2->] (bad) -- (good);
+   \node[below=6mm of bad.south west,anchor=north west,text width=12.5cm,font=\small,visible on=<3->] {%
+      \begin{itemize}
+         \item No vertical rules, few horizontal ones\supercite{fear2020booktabs}
+         \item Units in the header, numbers aligned at the decimal point
+         \item Few digits. Many numbers to compare? Plot them.\supercite{gelman2002tables}
+      \end{itemize}};
+\end{tikzpicture}
+\Stage{Communicate}
+\NoteRef{communicating/tables}
+\end{frame}
+
+\begin{frame}[optional]{Figures Side by Side}
+\begin{tikzpicture}[
+   /pgfplots/Panel/.style={lecture axis,ybar,bar width=6mm,width=2.9cm,height=3.8cm,ymin=0,
+      symbolic x coords={female,male},xtick=data,enlarge x limits=.5,title style={font=\scriptsize\sbseries}},
+]
+   \begin{axis}[Panel,name=a1,title={Adelie},ymax=4500,ylabel={Mean body mass (g)}]
+      \RoundBars[fill=Adelie]{0}{(female,3369) (male,4043)}
+   \end{axis}
+   \begin{axis}[Panel,at={(a1.south east)},anchor=south west,xshift=9mm,title={Gentoo},ymax=6000]
+      \RoundBars[fill=Gentoo]{0}{(female,4680) (male,5485)}
+   \end{axis}
+   \begin{scope}[visible on=<2->]
+   \begin{axis}[Panel,name=b1,at={(a1.south east)},anchor=south west,xshift=43mm,title={Adelie},ymax=6000,ylabel={Mean body mass (g)}]
+      \RoundBars[fill=Adelie]{0}{(female,3369) (male,4043)}
+   \end{axis}
+   \begin{axis}[Panel,at={(b1.south east)},anchor=south west,xshift=1mm,title={Gentoo},ymax=6000,yticklabels={}]
+      \RoundBars[fill=Gentoo]{0}{(female,4680) (male,5485)}
+   \end{axis}
+   \end{scope}
+   \node[below=6mm,Note,font=\small,text width=5cm,align=center] at(a1.south east) {own axes: the Adelie males look as heavy as the Gentoo males};
+   \node[below=6mm,Note,font=\small,text width=5cm,align=center,visible on=<2->] at(b1.south east) {one shared axis: a position on a common scale\supercite{cleveland1984graphical}};
+\end{tikzpicture}
+\KeyMessage<3->{Share and align the axes of panels you compare, and keep one color per group.\\
+   \bR{facet_wrap()} shares axes by default, \bR[mrpackage]{patchwork} aligns separate plots.}
+\Stage{Visualize,Communicate}
+\NoteRef{communicating/figures-side-by-side}
+\end{frame}
+
+\NextNoteRef{communicating/takeaways-1}
+\Takeaways[Communicating]{
+   \Learning{bullhorn}{Encode the message twice}{In the title and in the plot, by color and by label.}
+   \Learning{eye}{Compare by encoding}{Position on a common axis reads best, then length, area, color.}
+   \Learning{paint-brush}{Choose the right color palette}{Viridis keeps its order, also in gray print. Never rely on color alone.}
+   \Learning{question}{Be honest with numbers}{Start ratio axes at zero, give absolute numbers, and ask what is left out.}
+}

@@ -1,0 +1,421 @@
+\Chapter{1}
+
+\begin{frame}{The Data Analysis Workflow}
+\vspace*{3mm}
+\begin{tikzpicture}[
+   Phase/.style={Card,align=center,minimum width=17mm,minimum height=9mm,font=\small\sbseries},
+   Flow/.style={Link,BaseGray,thick},
+]
+   \node[Phase] (import) at (0,0) {Import};
+   \node[Phase,right=5mm of import,visible on=<2->] (tidy) {Tidy\SeeLater{later-tidy}{part 3}};
+   \node[Phase,right=7mm of tidy,visible on=<3->] (transform) {Transform\SeeLater{later-transform}{part 3}};
+   \node[Phase,right=8mm of transform,yshift=9mm,visible on=<4->] (visualise) {Visualize\SeeLater{chapter-2-3}{part 2}};
+   \node[Phase,right=8mm of transform,yshift=-9mm,visible on=<5->] (model) {Model\SeeLater{later-model}{part 3}};
+
+   \draw[Flow,visible on=<2->] (import) -- (tidy);
+   \draw[Flow,visible on=<3->] (tidy) -- (transform);
+   \draw[Flow,visible on=<4->] (transform.north) |- (visualise.west);
+   \draw[Flow,visible on=<5->] (visualise.south) -- (model.north);
+   \draw[Flow,visible on=<5->] (model.west) -| (transform.south);
+
+   \begin{scope}[on background layer]
+      \node[fit=(transform)(visualise)(model),draw=plotblue,fill=plotblue!6,rounded corners=4pt,inner xsep=4mm,inner ysep=3mm,visible on=<6->] (understand) {};
+   \end{scope}
+   \node[above=.5mm,font=\scriptsize\sbseries,plotblue,visible on=<6->] at(understand.north) {Understand};
+   \node[Phase,right=6mm of understand,visible on=<7->] (communicate) {Communicate\SeeLater{chapter-2-3}{part 2}};
+   \draw[Flow,visible on=<7->] (understand) -- (communicate);
+   \begin{scope}[on background layer]
+      \node[fit=(import)(understand)(communicate),draw=SoftGray,dashed,rounded corners=6pt,inner xsep=4mm,inner ysep=4.5mm,visible on=<8->] (program) {};
+   \end{scope}
+   \node[above right=.5mm and 2mm,font=\scriptsize\sbseries,gray,visible on=<8->] at(program.south west) {Program\supercite{wickham2023r4ds}};
+   % where each step comes back later
+
+
+\end{tikzpicture}
+\ShowPerson{wickham}
+\KeyMessage<9->{Write the steps as code where you can, so that you can run them again.}
+\NoteRef{exploring/the-data-analysis-workflow}
+\end{frame}
+
+\begin{frame}[fragile,label=messy-data]{Real Datasets Are Messy}
+344 measurements of penguins from Palmer Station, Antarctica,\supercite{horst2020palmerpenguins} as recorded originally:\\[2mm]
+\begin{minipage}{.6\textwidth}
+\scriptsize
+\begin{rsession}
+|dim|raw <- penguins_raw|dim|!*\CodeMark{rawdata}*!
+names(raw)[c(10, 13)]!*\CodeMark{nam}*!
+unique(raw$Species)!*\CodeMark{sp}*!
+table(raw$Sex, useNA = "ifany", dnn = NULL)!*\CodeMark{sex}*!
+unique(raw$Comments[is.na(raw$Sex)])[1:2]!*\CodeMark{com}*!
+\end{rsession}
+\end{minipage}
+\VarNote<2->[east]{code-rawdata}{(38mm,3mm)}{built into R since 4.5}
+\CodeNote<3->{nam}{spaces and units in the names}
+\CodeNote<4->{sp}{species as long strings}
+\CodeNote<5->{sex}{}
+\CodeNote<6->{com}{}
+\KeyMessage<7->{Expect to spend more time cleaning than analyzing.\supercite{wickham2014tidy}}
+\Stage{Tidy}
+\NoteRef{exploring/messy-data}
+\end{frame}
+
+\begin{frame}[fragile]{Cleaning in Code}
+\begin{columns}[c,onlytextwidth]
+   \begin{column}{.62\textwidth}
+\scriptsize
+\begin{rsession}
+clean <- penguins_raw |>!*\CodeMark{pipe}*!
+  select(species = Species, island = Island,!*\CodeMark{sel}*!
+         bill_len = `Culmen Length (mm)`,
+         body_mass = `Body Mass (g)`, sex = Sex) |>
+  mutate(species = sub(" .*", "", species),!*\CodeMark{mut}*!
+         sex = tolower(sex)) |>
+  filter(!is.na(body_mass))!*\CodeMark{fil}*!
+nrow(penguins_raw) - nrow(clean)!*\CodeMark{cnt}*!
+\end{rsession}
+   \end{column}
+   \begin{column}{.36\textwidth}
+   \end{column}
+\end{columns}
+\CodeNote<2->{pipe}{\bR{|>} passes the result on, the verbs are from \bR[mrpackage]{dplyr}}
+\CodeNote<2->{sel}{keep and rename columns}
+\CodeNote<2->{mut}{one plain value per cell}
+\CodeNote<2->{fil}{drop rows without a mass \dots}
+\CodeNote<3->{cnt}{\dots{} and report how many}
+\KeyMessage<6->{A script instead of hand edits cleans the next dataset the same way.}
+\Stage{Tidy}
+\NoteRef{exploring/cleaning-in-code}
+\end{frame}
+
+% small pictures of the words: a table with the marked part, and a population with the sample among it
+\newcommand\WordGrid[4]{\tikz[x=3mm,y=1.2mm,sharp corners]{\fill[gray!25] (0,4) rectangle (5,5); \fill[plotblue!60] (#1,#2) rectangle ++(#3,#4); \draw[gray!70,line width=.3pt,step=1] (0,0) grid (5,5); \draw[plotblue!85!black,line width=.7pt] (#1,#2) rectangle ++(#3,#4);}}
+\newcommand\WordDots[1]{\tikz[x=1.5mm,y=1.5mm]{\foreach \x/\y [count=\i] in {0/0,1.2/.6,2.4/0,3.6/.7,4.8/.1,6/.6,.6/1.6,1.8/2.2,3/1.5,4.2/2.3,5.4/1.6,6.6/2.2}
+   {\ifnum\i>#1 \fill[gray!35] (\x,\y) circle (.32);\else\fill[plotblue!70] (\x,\y) circle (.32);\fi}}}
+\begin{frame}{Words We Need}
+\centering
+\begin{tikzpicture}[
+   Word/.style={Card,anchor=north west,text width=27mm,minimum height=25mm,font=\scriptsize,align=left,inner sep=4pt},
+]
+   \foreach[count=\i] \word/\glyph/\what/\example/\x/\y in {
+      Dataset/{\WordGrid{0}{0}{5}{4}}/{a table of values}/{\texttt{penguins}: 344 rows}/0/0,
+      Observation/{\WordGrid{0}{2}{5}{1}}/{one row}/{one penguin}/1/0,
+      Variable/{\WordGrid{2}{0}{1}{4}}/{one column}/{\texttt{body\_mass}}/2/0,
+      Value/{\WordGrid{2}{2}{1}{1}}/{one cell}/{\qty{3750}{\gram}}/3/0,
+      Population/{\WordDots{12}}/{what we talk about}/{all such penguins}/0/1,
+      Sample/{\WordDots{4}}/{what we measured}/{these 344 rows}/1/1,
+      Summary/{\(\bar x = \frac{1}{n}\sum x_i\)}/{describes your data}/{mean mass \qty{4202}{\gram}}/2/1,
+      Model/{\(y = f(x) + \varepsilon\)}/{a formula plus noise}/{mass from flipper}/3/1%
+   } {
+      \pgfmathtruncatemacro\tint{30+\i*7}
+      \node[Word,draw=plotblue!\tint,visible on=<\i->] at({\x*32mm},{-\y*27mm}) {%
+         \textsb{\small\word}\\[.6mm]
+         \parbox[c][7mm][c]{27mm}{\centering\glyph}\\[.6mm]
+         \what\\[.4mm]
+         \textcolor{gray}{\example}};
+   }
+\end{tikzpicture}
+\KeyMessage<9->{A summary describes the data you have. A model claims more, and can be wrong.}
+\NoteRef{exploring/words-we-need}
+\end{frame}
+
+% small pictures of the four scales
+\newsavebox\GlyphNominal\sbox\GlyphNominal{\tikz[x=4mm,y=4mm]{\foreach \c/\x/\y in {Adelie/0/0,Gentoo/1.2/.4,Chinstrap/2.4/0,Gentoo/.6/1,Adelie/1.8/1.1} \fill[\c] (\x,\y) circle[radius=.32];}}
+\newsavebox\GlyphOrdinal\sbox\GlyphOrdinal{\tikz[x=4mm,y=4mm]{\foreach \h/\x in {.5/0,1/1,1.5/2} \fill[plotblue!70] (\x,0) [rounded corners=1pt] -- ++(0,\h) -- ++(.7,0) [sharp corners] -- ++(0,-\h) -- cycle; \draw[-Kite,gray] (0,-.3) -- (2.9,-.3);}}
+\newsavebox\GlyphInterval\sbox\GlyphInterval{\tikz[x=4mm,y=4mm]{\draw[gray] (0,0) -- (3,0); \foreach \x/\t in {0/-10,1/0,2/10,3/20} \draw[gray] (\x,0) -- (\x,.2) node[above,font=\tiny] {\t}; \draw[Warn,thick] (1,-.25) -- (1,.15);}}
+\newsavebox\GlyphRatio\sbox\GlyphRatio{\tikz[x=4mm,y=4mm]{\foreach \y/\w in {0/1.4,.7/2.8} \fill[plotblue!70] (0,\y) [rounded corners=1pt] -- ++(\w,0) -- ++(0,.5) [sharp corners] -- ++(-\w,0) -- cycle; \draw[gray] (0,-.2) -- (0,1.4); \node[font=\tiny,right] at (2.8,.95) {\(2\times\)};}}
+\begin{frame}{Scales of Measurement}
+{\small\color{gray}Every variable has a scale: it decides what you may compute with its values.\par}\vspace{3mm}
+\begin{tikzpicture}[
+   Level/.style={Card,anchor=north west,text width=26mm,minimum height=39mm,font=\scriptsize,align=left,inner sep=6pt},
+   Glyph/.style={anchor=north,inner sep=0pt},
+]
+   \foreach[count=\i] \name/\glyph/\example/\allows/\stats/\r in {
+      Nominal/\GlyphNominal/{species}/{equal or not}/{how many of each, most common}/{factor},
+      Ordinal/\GlyphOrdinal/{low < mid < high}/{+ order}/{+ median, quantiles}/{ordered},
+      Interval/\GlyphInterval/{\unit{\celsius}: no true zero}/{+ differences}/{+ mean, SD}/{numeric},
+      Ratio/\GlyphRatio/{mass (\unit{\gram}): true zero}/{+ ratios: \(2\times\)}/{+ CV \(= s / \bar x\)}/{numeric}%
+   } {
+      \pgfmathtruncatemacro\tint{30+\i*17}
+      % every row has the same height, so the four cards line up
+      \node[Level,draw=plotblue!\tint,visible on=<\i->] (l\i) at ({(\i-1)*36mm},0) {%
+         \textsb{\small\name}\\[2mm]
+         \parbox[c][9mm][c]{26mm}{\centering\usebox\glyph}\\[1mm]
+         \textcolor{gray}{\example}\\[2mm]
+         \allows\\[1mm]
+         \stats\\[2mm]
+         in R: \texttt{\r}};
+   }
+\end{tikzpicture}
+\KeyMessage<5->{Scales build on each other.\\ So no mean of shirt sizes or zip codes.\supercite{stevens1946theory}}
+\NoteRef{exploring/scales-of-measurement}
+\end{frame}
+
+\newcommand\GlyphPosition{\tikz[x=2mm,y=2mm]{\draw[SoftGray] (0,0) -- (4,0); \foreach \x/\y in {.5/1.5,1.5/2.5,2.5/1,3.5/2} \fill[plotblue] (\x,\y) circle[radius=.35];}}
+\newcommand\GlyphAligned{\tikz[x=2mm,y=2mm]{\draw[SoftGray] (0,0) -- (1.6,0) (2.4,.8) -- (4,.8); \fill[plotblue] (.8,2) circle[radius=.35] (3.2,2.4) circle[radius=.35];}}
+\newcommand\GlyphLength{\tikz[x=2mm,y=2mm]{\fill[plotblue] (0,0) rectangle (3.6,.7) (0,1) rectangle (2.4,1.7) (0,2) rectangle (3,2.7);}}
+\newcommand\GlyphAngle{\tikz[x=2mm,y=2mm]{\fill[plotblue] (0,0) -- (1.4,0) arc[start angle=0,end angle=70,radius=1.4] -- cycle; \fill[plotblue!50] (0,0) -- (70:1.4) arc[start angle=70,end angle=360,radius=1.4] -- cycle;}}
+\newcommand\GlyphArea{\tikz[x=2mm,y=2mm]{\fill[plotblue] (0,.5) circle[radius=.5] (1.9,.9) circle[radius=.9] (4.3,1.2) circle[radius=1.2];}}
+% cubes of three sizes, front, top, and side face in three shades
+\newcommand\GlyphCube[3]{\fill[plotblue] (#1,0) rectangle ++(#2,#2); \fill[plotblue!55] (#1,#2) -- ++(#3,#3) -- ++(#2,0) -- ++(-#3,-#3) -- cycle; \fill[plotblue!75!black] ({#1+#2},0) -- ++(#3,#3) -- ++(0,#2) -- ++(-#3,-#3) -- cycle;}
+\newcommand\GlyphVolume{\tikz[x=2mm,y=2mm]{\GlyphCube{0}{.7}{.3}\GlyphCube{1.4}{1.1}{.45}\GlyphCube{3.3}{1.5}{.6}}}
+\newcommand\GlyphCurvature{\tikz[x=2mm,y=2mm]{\draw[plotblue,thick,line cap=round] (0,0) .. controls (.8,2) and (1.6,2) .. (2.4,0);}}
+\newcommand\GlyphShade{\tikz[x=2mm,y=2mm]{\foreach \i/\s in {0/20,1/45,2/70,3/95} \fill[plotblue!\s] (\i,0) rectangle ++(.85,1.6);}}
+
+\Chapter{2}
+
+\NextNoteRef{exploring/quiz-stability-of-summaries}
+\Quiz{Stability of Summaries}{Your data points are 2, 3, 4, 5, 6. A \enquote{typo} turns the 6 into 26.\\ Which summary does not change at all?}
+   {mean}{median}{standard deviation}{range}{B}
+   {The median stays 4: only the middle value counts. Mean, standard deviation, and range all use the 26.}
+
+\begin{frame}{Mean and Median}
+\begin{tikzpicture}[
+   x=4.2mm,
+   Value/.style={circle,fill=plotblue,inner sep=0pt,minimum size=5pt,fill opacity=.85},
+   Marker/.style={font=\scriptsize\sbseries,align=center},
+]
+   \def\outlier{6}
+   \only<5->{\def\outlier{26}}
+   \pgfmathsetmacro\mean{(2+3+4+5+\outlier)/5}
+   \def\median{4}
+
+   \draw[SoftGray,-Kite] (0,0) -- (32,0);
+   \foreach \x in {0,5,...,30} \draw[SoftGray] (\x,0) -- ++(0,-1mm) node[below,font=\scriptsize,gray] {\x};
+   \foreach \x in {2,3,4,5} \node[Value] at (\x,2.5mm) {};
+   \node[Value,fill=Warn] (out) at (\outlier,2.5mm) {};
+   \onslide<5->{\node[above,font=\scriptsize,Warn] at(out.north) {typo?};}
+
+   \onslide<2->{
+      \draw[Warn,thick] (\mean,-6mm) -- (\mean,9mm) node[above,Marker,Warn] {mean\\\(\bar x = \pgfmathprintnumber[fixed,precision=2]{\mean}\)};
+   }
+   \onslide<3->{
+      \draw[BaseGray,thick,dashed] (\median,9mm) -- (\median,-12mm) node[below,Marker,BaseGray] {median\\\(\tilde x = \median\)};
+   }
+
+   \onslide<4->{
+      \node[Card,anchor=south west,font=\small] (formulas) at (11,6mm) {%
+         \(\displaystyle \bar x = \frac1n\sum_{i=1}^{n} x_i\)\\[2mm]
+         \(\tilde x\): the middle value of the sorted data
+      };
+   }
+   \onslide<6->{
+      \node[align=left,font=\small,text width=12cm,anchor=north west] at(0,-24mm) {%
+         A typo moves the mean a lot and the median only a little.
+         Report both.};
+   }
+\end{tikzpicture}
+\NoteRef{exploring/mean-and-median}
+\end{frame}
+
+\begin{frame}<1-|handout:1-2>[label=plot-deviations]{Deviations, Variance, and Standard Deviation}
+\centering
+\begin{tikzpicture}
+   \node[Plot] (dev) at (0,0) {\includegraphics[width=5cm]{deviations}};
+   \node[Plot,right=8mm of dev,visible on=<2->] (sq) {\includegraphics[width=5cm]{deviations-squares}};
+   \node[below=1mm,Note,font=\small] at(dev.south) {deviations from the mean sum to zero};
+   \node[below=1mm,Note,font=\small,visible on=<2->] at(sq.south) {squared, they no longer cancel};
+   \node[below=9mm,font=\small,visible on=<3->] at($(dev.south)!.5!(sq.south)$) {%
+      variance \(\displaystyle s^2 = \frac{1}{n-1}\sum_{i=1}^n (x_i - \bar x)^2\)\qquad
+      standard deviation (SD) \(s = \sqrt{s^2}\), in the unit of the data};
+   % a hint for later: the SD on a normal distribution, over the two plots (a page of its own in the handout)
+   \onslide<4|handout:2>{
+      \begin{scope}[shift={($(dev.north)!.5!(sq.south)+(0,-6.6mm)$)},x=11mm,y=20mm]
+         \node[Card,minimum width=118mm,minimum height=47mm,fill=white] at (0,.33) {};
+         \fill[plotblue!30] plot[domain=-1:1,samples=30] (\x,{exp(-\x*\x/2)}) -- (1,0) -- (-1,0) -- cycle;
+         \fill[plotblue!14] plot[domain=1:2,samples=20] (\x,{exp(-\x*\x/2)}) -- (2,0) -- (1,0) -- cycle;
+         \fill[plotblue!14] plot[domain=-2:-1,samples=20] (\x,{exp(-\x*\x/2)}) -- (-1,0) -- (-2,0) -- cycle;
+         \draw[thick,smooth] plot[domain=-3.2:3.2,samples=50] (\x,{exp(-\x*\x/2)});
+         \draw[gray] (-3.3,0) -- (3.3,0);
+         \foreach \z/\t in {-2/{-2},-1/{-1},0/{0},1/{1},2/{2}} \draw[gray] (\z,0) -- ++(0,-.04) node[below,font=\scriptsize] {\(\t\)};
+         \node[font=\scriptsize,gray] at (0,-.32) {\(z = (x - \bar x) / s\): how many SDs from the mean};
+         \node[font=\scriptsize] at (0,.42) {\qty{68}{\percent}};
+         \draw[|<->|,black,line width=.3pt,>={Stealth[length=.8mm]}] (0,.1) -- (1,.1);
+         \node[font=\tiny,text=black,inner sep=1pt] at (.5,.2) {standard deviation};
+         \node[font=\scriptsize,gray,anchor=west] at (2.25,.42) {within \(\pm 2\) SD: \qty{95}{\percent}};
+         \node[font=\scriptsize,gray,anchor=west] at (2.25,.2) {only if it is normal};
+      \end{scope}
+   }
+\end{tikzpicture}
+\PlotCode{deviations}
+\only<1-3|handout:1>{\NoteRef{exploring/plot-deviations}}
+\only<4|handout:2>{\NoteRef{exploring/plot-deviations-2}}
+\end{frame}
+
+\begin{frame}{Spread and the Boxplot}
+\begin{tikzpicture}[
+   x=9mm,
+   Label/.style={font=\scriptsize,align=center},
+   Arrow/.style={Link,gray,thin},
+]
+   \def\low{1}
+   \def\qa{3}
+   \def\med{4.2}
+   \def\qc{6}
+   \def\high{9}
+   \def\out{12.4}
+
+   \draw[SoftGray,-Kite] (0,-28mm) -- (13.5,-28mm);
+   \foreach \x in {0,2,...,12} \draw[SoftGray] (\x,-28mm) -- ++(0,-1mm) node[below,font=\scriptsize,gray] {\x};
+
+   \draw[thick] (\low,0) -- (\qa,0) (\qc,0) -- (\high,0);
+   \draw[thick] (\low,-2mm) -- (\low,2mm) (\high,-2mm) -- (\high,2mm);
+   \draw[thick,fill=plotblue!15] (\qa,-5mm) rectangle (\qc,5mm);
+   \draw[very thick,plotblue] (\med,-5mm) -- (\med,5mm);
+   \node[circle,draw,thick,inner sep=1.5pt] (outlier) at (\out,0) {};
+
+   \onslide<2->{
+      \node[below,Label] (l-med) at ({(\qa+\qc)/2},-17mm) {median\\(\qty{50}{\percent})};
+      \draw[Arrow,shorten >=1pt] (l-med.north) to[out=90,in=-90] (\med,-5mm);
+   }
+   \onslide<3->{
+      \node[below,Label] (l-qa) at ([xshift=-7mm]\qa,-17mm) {\(Q_1\)\\(\qty{25}{\percent})};
+      \draw[Arrow,shorten >=1pt] (l-qa.north) to[out=90,in=-90] (\qa,-5mm);
+      \node[below,Label] (l-qc) at ([xshift=7mm]\qc,-17mm) {\(Q_3\)\\(\qty{75}{\percent})};
+      \draw[Arrow,shorten >=1pt] (l-qc.north) to[out=90,in=-90] (\qc,-5mm);
+   }
+   \onslide<4->{
+      \draw[decorate,decoration={brace,amplitude=4pt,raise=2pt},gray] (\qa,5mm) -- (\qc,5mm) node[midway,above=6pt,Label,xshift=10mm] {interquartile range\\IQR \(= Q_3 - Q_1\), the middle half};
+   }
+   \onslide<5->{
+      \node[right,Label,align=left] (l-whisker) at ([shift={(6mm,10mm)}]\high,0) {whiskers reach the last point\\within \(1.5\cdot\mathrm{IQR}\) of the box};
+      \draw[Arrow,shorten >=1pt] (l-whisker.west) to[out=180,in=90] (\high,2mm);
+   }
+   \onslide<6->{
+      \node[below,Label] (l-out) at ([xshift=-5mm]\out,-12mm) {beyond:\\drawn as a point};
+      \draw[Arrow,shorten >=1pt] (l-out.north) to[out=90,in=-90] (outlier.south);
+   }
+\end{tikzpicture}
+\PinguSays<7->{Five numbers: whisker ends, \(Q_1\), median, \(Q_3\).}
+\KeyMessage<7->{Median and quartiles are robust against outliers, the SD is not.}
+\vspace*{9mm}
+\Stage{Visualize}
+\NoteRef{exploring/spread-and-the-boxplot}
+\end{frame}
+
+\Chapter{3}
+
+\begin{frame}{Exploratory Data Analysis}
+\begin{tikzpicture}[
+   Mode/.style={Card,align=left,text width=50mm,minimum height=20mm,anchor=north,font=\small},
+]
+   \node[align=center,text width=11cm,font=\large] (quote) at (0,0) {%
+      \enquote{The greatest value of a picture is when it forces us to notice what we never expected to see.}};
+   \node[below=1mm,font=\small,gray] (who) at(quote.south) {John W. Tukey, 1977\supercite{tukey1977eda}};
+   \node[Mode,below left=4mm and 3mm of who.south,anchor=north east,visible on=<2->] (eda) {%
+      \textsb{Exploratory}\\[1mm]
+      What is in the data? Many quick plots, summaries, and surprises. Hypotheses come \textit{out}.\\[1mm]\textcolor{gray}{For new data and open questions}};
+   \node[Mode,below right=4mm and 3mm of who.south,anchor=north west,visible on=<3->] (cda) {%
+      \textsb{Confirmatory}\\[1mm]
+      Does a stated hypothesis hold? One planned analysis, ideally on fresh data. Hypotheses go \textit{in}.\\[1mm]\textcolor{gray}{For a claim you want to defend}};
+   \draw[Link,gray,thick,visible on=<3->] (eda) -- (cda) node[midway,above,font=\scriptsize] {then};
+\end{tikzpicture}
+\KeyMessage<4->{A hypothesis you found in the data needs new data to be tested.}
+\NoteRef{exploring/exploratory-data-analysis}
+\end{frame}
+
+\begin{frame}[label=plot-distributions]{Distributions}
+\centering
+\begin{tikzpicture}
+   \node[Plot] (plot) at (0,0) {\includegraphics[width=10.5cm]{distributions}};
+   \node[below=1mm,font=\small,text width=12cm,align=center,visible on=<2->] at(plot.south) {%
+      A distribution says how often each value occurs.
+      Symmetric distributions have mean = median.};
+\end{tikzpicture}
+\PlotCode{distributions}
+\Stage{Visualize}
+\NoteRef{exploring/plot-distributions}
+\end{frame}
+
+\begin{frame}[label=plot-histograms]{Histograms and Bin Width}
+\centering
+\begin{tikzpicture}
+   \node[Plot] (h1) at (0,0) {\includegraphics[width=4.1cm]{hist-binwidth-1}};
+   \node[Plot,right=4mm of h1,visible on=<2->] (h2) {\includegraphics[width=4.1cm]{hist-binwidth-2}};
+   \node[Plot,right=4mm of h2,visible on=<3->] (h3) {\includegraphics[width=4.1cm]{hist-binwidth-3}};
+   \onslide<1>{\node[below=2mm,Note,font=\small] at(h1.south) {Too coarse: no structure};}
+   \onslide<2->{\node[below=2mm,Note,font=\small] at(h2.south) {Two groups of eruptions};}
+   \onslide<3->{\node[below=2mm,Note,font=\small] at(h3.south) {Mostly noise.};}
+\end{tikzpicture}
+\PlotCode{histograms}
+\KeyMessage<4->{Binning is a modeling choice: try several bin widths and report which one you used.\supercite{holtz2018datatovizcaveats}}
+\Stage{Visualize}
+\NoteRef{exploring/plot-histograms}
+\end{frame}
+
+\NextNoteRef{exploring/quiz-limits-of-boxplots}
+\Quiz{Limits of Boxplots}{You are given a boxplot of one variable.\\ What can it not show?}
+   {the median}{the middle half}{unusually large values}{two separate peaks}{D}
+   {The box only marks quartiles, not the shape. Two clusters can give the same box as one flat group.}
+
+\begin{frame}[label=plot-boxplots]{What a Boxplot Hides}
+\centering
+\begin{tikzpicture}
+   \node[Plot] (box) at (0,0) {%
+      \only<1|handout:0>{\includegraphics[width=5cm]{box-hides-1}}%
+      \only<2->{\includegraphics[width=5cm]{box-hides-2}}%
+   };
+   \node[Plot,right=6mm of box,visible on=<3->] (violin) {\includegraphics[width=5cm]{box-hides-3}};
+   \node[below=1mm,Note,font=\small] at(box.south) {\alt<1|handout:0>{three identical boxes}{the raw points}};
+   \node[below=1mm,Note,font=\small,visible on=<3->] at(violin.south) {violin: the density};
+\end{tikzpicture}
+\PlotCode{boxplots}
+\KeyMessage<4->{A boxplot also hides the sample size. Show points when there are few, a density when there are many.\\ Use violins only if you want to highlight the shape (more in part 2).\supercite{holtz2018datatovizcaveats}}
+\Stage{Visualize,Communicate}
+\NoteRef{exploring/plot-boxplots}
+\end{frame}
+
+\begin{frame}[label=plot-simpson]{Simpson's Paradox}
+\centering
+\begin{tikzpicture}
+   \node[Plot] (plot) at (0,0) {%
+      \only<1|handout:0>{\includegraphics[width=6.3cm]{simpson-1}}%
+      \only<2->{\includegraphics[width=6.3cm]{simpson-2}}%
+   };
+   \node[right=6mm,anchor=north west,align=left,font=\small,text width=5.2cm] (text) at([yshift=-4mm]plot.north east) {%
+      Pearson's \textcolor{PartTint}{\sbseries linear} correlation\\[1mm]
+      \(\displaystyle r = \frac{\sum (x_i - \bar x)(y_i - \bar y)}{\sqrt{\sum (x_i - \bar x)^2}\sqrt{\sum (y_i - \bar y)^2}}\)\\[1mm]
+      {\scriptsize\color{gray}from \(-1\) to \(1\). 0: no linear relation. Positive: both rise together. Negative: one rises, the other falls.}\\[2mm]
+      All penguins\supercite{horst2020palmerpenguins}: \(r = \mrValueOf{bill_cor()}\)
+   };
+   \onslide<2->{
+      \node[below=1mm of text.south west,anchor=north west,align=left,font=\small] (species) {%
+         \textcolor{Adelie}{\sbseries Adelie} \(r = \mrValueOf{bill_cor("Adelie")}\),\enspace
+         \textcolor{Chinstrap}{\sbseries Chinstrap} \(r = \mrValueOf{bill_cor("Chinstrap")}\),\\
+         \textcolor{Gentoo}{\sbseries Gentoo} \(r = \mrValueOf{bill_cor("Gentoo")}\)
+      };
+   }
+\end{tikzpicture}
+\KeyMessage<3->{The hidden variable is the species: within each one the trend reverses.\supercite{bickel1975berkeley}}
+\ShowPerson{pearson}
+\PlotCode{simpson}
+\Stage[14mm]{Model,Communicate}
+\NoteRef{exploring/plot-simpson}
+\end{frame}
+
+\NextNoteRef{exploring/quiz-limits-of-correlation}
+\QuizHint{\(r\) from \(-1\) to \(1\). 0: no linear relation.\\ Positive: both rise together.\\ Negative: one rises, the other falls.}
+\Quiz{Limits of Correlation}{Over 100 days, sales rise with the temperature, then fall just as much\\ on the hottest days. Pearson's \(r\) is about zero. What follows?}
+   {sales and heat are unrelated}{the sample is too small}{\(r\) misses curved patterns}{the calculation of \(r\) must be wrong}{C}
+   {\(r\) only measures a linear association. An inverted U gives \(r \approx 0\) despite a strong link. Plot first.}
+
+\begin{frame}[label=plot-correlation-curve]{A Strong Link with Almost No Correlation}
+\centering
+\begin{tikzpicture}
+   \node[Plot] (plot) at (0,0) {\includegraphics[width=6.6cm]{correlation-curve}};
+   \node[right=6mm,anchor=west,align=left,font=\small,text width=4.8cm] at(plot.east) {%
+      Simulated ice cream sales\\[2mm]
+      The line through the points is almost flat, yet temperature predicts sales well};
+\end{tikzpicture}
+\PlotCode{correlation-curve}
+\KeyMessage{\(r\) only measures a straight-line relation, so plot the data first.}
+\Stage{Visualize,Model}
+\NoteRef{exploring/plot-correlation-curve}
+\end{frame}
+
+\NextNoteRef{exploring/takeaways-1}
+\Takeaways{
+   \Learning{exclamation-triangle}{Expect messy data}{Expect gaps and typos. Clean in a script, so that every change stays visible.}
+   \Learning{bar-chart}{Look behind the number}{Whether it means what you hope, you only see by looking at the data.}
+   \Learning{balance-scale}{Neither over- nor underreport}{What does a reader need to judge it? Not every number, but no hidden one.}
+   \Learning{bullhorn}{Ask if the story is worth telling}{A pattern can be noise or a hidden group. Then it is no finding yet.}
+}

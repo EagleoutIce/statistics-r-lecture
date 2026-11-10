@@ -1,0 +1,19 @@
+---
+title: "Penguin body mass"
+format: typst
+bibliography: references.bib
+execute:
+  echo: false
+---
+
+Data from the Palmer Archipelago [@gorman2014].
+
+```{r}
+#| label: fig-mass
+#| fig-cap: "Body mass by species."
+library(ggplot2)
+ggplot(penguins, aes(species, body_mass)) +
+  geom_boxplot()
+```
+
+As @fig-mass shows, Gentoo penguins are heavier.

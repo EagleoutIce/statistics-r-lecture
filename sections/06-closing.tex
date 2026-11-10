@@ -1,0 +1,23 @@
+\DefinePingu[.4]\PinguBye{eyes wink,wings wave,graduate=Gentoo}
+\begin{frame}[c]{Summary}
+\setcounter{learning}{0}%
+\centering
+\begin{tikzpicture}
+   \Learning{search}{Exploring data}{Clean in code, look first, and report what a reader needs.}
+   \Learning{balance-scale}{Testing and communicating}{Choose the test first, count every test, report the effect.}
+   \Learning{terminal}{Programming in R}{Vectors, tidy data, and points instead of bars.}
+   \Learning{refresh}{Reproducible reports}{Render from scratch, pin versions, record the seed.}
+\end{tikzpicture}
+\begin{tikzpicture}[overlay,remember picture]
+   \node[above left=3mm and 2mm of current page.south east,anchor=south east,visible on=<5->] {\usebox\PinguBye};
+\end{tikzpicture}
+\TutorialLeft{https://r4ds.hadley.nz}{Where next: R for Data Science}
+\begin{tikzpicture}[overlay,remember picture]
+   \node[above right,xshift=9mm,yshift=9mm,font=\scriptsize\sbseries,inner sep=1pt] at(current page.south west)
+      {\href{https://github.com/EagleoutIce/statistics-r-lecture}{\textcolor{PartTint}{\faGithub~Slides and code: github.com/EagleoutIce/statistics-r-lecture}}};
+\end{tikzpicture}%
+\NoteRef{closing/summary}
+\end{frame}
+
+% the user study and the feedback form are only in the private copy (notes/closing.tex)
+\IfFileExists{notes/closing.tex}{\input{notes/closing.tex}}{}

@@ -1,0 +1,38 @@
+\begin{frame}[fragile,t]{Code: Shared Colors}
+\tiny
+\iR[frame=none,mrscope=theme,lastline=25]{figures/theme.R}
+\end{frame}
+
+\begin{frame}[fragile,t]{Code: Shared Theme}
+\scriptsize
+\iR[frame=none,mrscope=theme,mrplayground=false,firstline=27,lastline=38,firstnumber=27]{figures/theme.R}
+\end{frame}
+
+\begin{frame}[fragile,t]{Code: Rounded Bars}
+\tiny
+\iR[frame=none,mrscope=theme,mrprefix={library(ggplot2)},firstline=40,lastline=66,firstnumber=40]{figures/theme.R}
+\end{frame}
+
+\begin{frame}[fragile,t]{Code: Rounded Bars (cont.), Saving Figures and Data}
+\tiny
+\iR[frame=none,mrscope=theme,firstline=67,firstnumber=67]{figures/theme.R}
+\end{frame}
+
+\begin{frame}[fragile,t,label=code-quarto]{Code: The Quarto Report}
+\begin{columns}[T]
+   \begin{column}{.55\textwidth}
+\scriptsize
+\textsb{examples/report/analysis.qmd}
+\lstinputlisting[language=void,basicstyle=\ttfamily\tiny,columns=fullflexible,keepspaces]{examples/report/analysis.qmd}
+   \end{column}
+   \begin{column}{.41\textwidth}
+\scriptsize
+\textsb{examples/report/\_quarto.yml}
+\lstinputlisting[language=void,basicstyle=\ttfamily\tiny,columns=fullflexible,keepspaces]{examples/report/_quarto.yml}
+\textsb{Render}: \texttt{quarto render analysis.qmd}
+   \end{column}
+\end{columns}
+\end{frame}
+
+% one frame per \PlotCode, written at the end of the previous run
+\InputIfFileExists{\jobname-code.tex}{}{}

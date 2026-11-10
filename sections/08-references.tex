@@ -1,0 +1,14 @@
+\nocite{*}
+\defbibheading{compact}[]{\vspace*{-2mm}}
+\renewcommand*{\bibfont}{\tiny}
+\setlength{\bibitemsep}{1pt}
+
+% \References{keyword}{title}
+\newcommand\References[2]{%
+   \begin{frame}[allowframebreaks,t]{\CiteColoured{#1}{\csuse{cite@#1@icon}}~#2}
+      \printbibliography[keyword=#1,heading=compact]
+   \end{frame}%
+}
+\References{fundamentals}{Fundamentals}
+\References{resources}{Resources to Look Things Up}
+\References{niceToKnow}{Nice to Know}

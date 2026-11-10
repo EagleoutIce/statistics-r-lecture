@@ -1,0 +1,31 @@
+[project]
+name = "r-statistics"
+# 4.5 or later for the built-in penguins data
+r_version = "4.6"
+
+# A dated snapshot, so that resolving again gives the same versions; rv.lock records them exactly.
+repositories = [
+    { alias = "PPM", url = "https://packagemanager.posit.co/cran/2026-07-01" },
+]
+
+dependencies = [
+    # figures/ and the values and console sessions of magic-r
+    "ggplot2",
+    "dplyr",
+    "tidyr",
+    "purrr",
+    "scales",
+    "viridisLite",
+    "hexbin",
+    "showtext",
+    "sysfonts",
+    # the Quarto report in examples/report
+    "knitr",
+    "rmarkdown",
+    # shown on the slides, magic-r links their functions from the installed package
+    "shiny",
+    "plotly",
+    "ggiraph",
+    "renv",
+    "reprex",
+]

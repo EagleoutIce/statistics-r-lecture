@@ -1,0 +1,122 @@
+# Builds every version of the slides and offers the PDFs as an artifact of the run.
+# In the public copy (no notes/notes.tex) it also attaches the PDFs to the release 'latest', which the README links.
+name: Build slides
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: build-slides
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    container: texlive/texlive:latest
+    steps:
+      - name: Install the tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git make rsync qpdf poppler-utils nodejs fontconfig curl \
+            r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libfontconfig1-dev libfreetype6-dev \
+            libpng-dev libharfbuzz-dev libfribidi-dev
+          # the R packages from Debian where it has them, which is much faster than compiling them
+          for p in dplyr tidyr purrr ggplot2 scales hexbin viridislite shiny plotly ggiraph showtext sysfonts renv reprex; do
+            apt-get install -y --no-install-recommends "r-cran-$p" || echo "not in Debian: $p"
+          done
+          # the figures use Fira Sans, which TeX Live ships
+          mkdir -p "$HOME/.fonts"
+          cp "$(kpsewhich -var-value TEXMFDIST)"/fonts/opentype/public/fira/FiraSans-*.otf "$HOME/.fonts/"
+          fc-cache -f
+          # what Debian does not package comes from CRAN
+          Rscript -e 'for (p in c("dplyr", "tidyr", "purrr", "ggplot2", "scales", "hexbin", "viridisLite", "shiny", "plotly", "ggiraph", "showtext", "sysfonts", "renv", "reprex")) if (!requireNamespace(p, quietly = TRUE)) install.packages(p, repos = "https://cloud.r-project.org", Ncpus = 4L)'
+          curl -fsSL -o /tmp/quarto.deb https://quarto.org/download/latest/quarto-linux-amd64.deb
+          apt-get install -y /tmp/quarto.deb
+          R --version | head -n 1
+          quarto --version
+
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Trust the checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      # the handout first: if the sources do not build, this fails fast and not after all versions
+      - name: Build the handout
+        run: make -s handout
+
+      - name: Build the other versions
+        run: make -s -k -j2 all
+
+      - name: Show the LaTeX errors
+        if: failure()
+        run: |
+          for log in .snapshot/*/build/*.log; do
+            echo "== $log"
+            grep -a -A4 -E '^!|:[0-9]+: ' "$log" | head -n 60 || true
+            echo "-- the end of $log"
+            tail -n 25 "$log"
+          done
+
+      - name: Check that every PDF is there
+        run: |
+          pdfs="r-statistics r-statistics-anim r-statistics-nosolutions r-statistics-lecture-1 r-statistics-lecture-2"
+          [ -e notes/notes.tex ] && pdfs="$pdfs r-statistics-notes r-statistics-anim-notes report-flaws"
+          for pdf in $pdfs; do
+            test -s "$pdf.pdf" || { echo "missing: $pdf.pdf"; exit 1; }
+          done
+
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: slides
+          path: |
+            r-statistics*.pdf
+            report-flaws.pdf
+          if-no-files-found: warn
+
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: logs
+          path: .snapshot/*/build/*.log
+          if-no-files-found: warn
+          include-hidden-files: true
+
+      # only the public copy publishes, and only PDFs that were built without any speaker notes
+      - name: Check that the public PDFs hold no speaker notes
+        if: hashFiles('notes/notes.tex') == ''
+        run: |
+          for pdf in r-statistics r-statistics-anim r-statistics-nosolutions r-statistics-lecture-1 r-statistics-lecture-2; do
+            if pdftotext "$pdf.pdf" - | grep -E -q '(MAIN|POINT|SUB|ASK|TIP|ANECDOTE):'; then
+              echo "speaker notes in $pdf.pdf"; exit 1
+            fi
+          done
+
+      - name: Move the tag 'latest' to this commit
+        if: hashFiles('notes/notes.tex') == '' && github.event_name != 'pull_request'
+        run: |
+          git tag -f latest
+          git push -f origin refs/tags/latest
+
+      - name: Publish the PDFs on the release 'latest'
+        if: hashFiles('notes/notes.tex') == '' && github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest slides
+          body: The slides of the latest commit on main, built by CI.
+          make_latest: true
+          files: |
+            r-statistics.pdf
+            r-statistics-lecture-1.pdf
+            r-statistics-lecture-2.pdf
+            r-statistics-nosolutions.pdf
+            r-statistics-anim.pdf
